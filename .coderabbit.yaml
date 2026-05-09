@@ -1,0 +1,30 @@
+language: en-US
+tone_instructions: "Be direct and surgical. Flag real bugs, security issues, race conditions, incorrect financial logic. Skip stylistic nitpicks unless they affect correctness."
+early_access: false
+
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!frontend/dist/**"
+    - "!dist/**"
+    - "!**/*.lock"
+    - "!**/*.log"
+    - "!data/**"
+  path_instructions:
+    - path: "src/execution/**"
+      instructions: "This handles real money (paper trading but live execution path). Flag any logic that could corrupt P&L tracking, double-execute orders, or mis-attribute fills to wrong positions. Position lifecycle invariants are critical."
+    - path: "src/db/**"
+      instructions: "Schema and queries. Flag missing indexes on hot paths, non-idempotent migrations, and SQL that could lock the DB during writes."
+    - path: "src/ingestion/**"
+      instructions: "External data sources. Flag missing rate-limit handling, parsing assumptions that could break on edge cases, and silent error swallowing."
+
+chat:
+  auto_reply: true

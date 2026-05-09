@@ -3,6 +3,10 @@ dist/
 frontend/dist/
 data/*.db
 data/*.db-*
+data/*.sqlite
+data/*.sqlite-*
+data/*.log
 .env
 .env.local
 npm-debug.log*
+.DS_Store

@@ -1,8 +1,0 @@
-node_modules/
-dist/
-frontend/dist/
-data/*.db
-data/*.db-*
-.env
-.env.local
-npm-debug.log*

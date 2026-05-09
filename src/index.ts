@@ -4,7 +4,6 @@ import { getDb, insertFundHoldings, insertRankingRun, insertTrades, upsertSource
 import { EdgarSource } from "./ingestion/edgar.js";
 import { HouseClerkSource } from "./ingestion/house-clerk.js";
 import { QuiverSource } from "./ingestion/quiver.js";
-import { SenateEfdSource } from "./ingestion/senate-efd.js";
 import { OrderManager } from "./execution/order-manager.js";
 import { PositionMonitor } from "./execution/position-monitor.js";
 import { Rebalancer } from "./execution/rebalancer.js";
@@ -24,7 +23,6 @@ const db = getDb();
 const alertEngine = new AlertEngine(db);
 const edgar = new EdgarSource();
 const quiver = new QuiverSource();
-const senateEfd = new SenateEfdSource();
 const houseClerk = new HouseClerkSource();
 const prices = new PriceCache(db, new YahooFinancePriceProvider());
 const signalFilter = new SignalFilter(db);
@@ -40,14 +38,6 @@ process.on("unhandledRejection", (err) => {
 });
 process.on("SIGTERM", () => { logger.info("SIGTERM received"); db.close(); process.exit(0); });
 process.on("SIGINT", () => { logger.info("SIGINT received"); db.close(); process.exit(0); });
-
-async function ingestCongressTrades() {
-  await Promise.all([
-    ingestTradeSource("edgar", () => edgar.fetchNewTrades()),
-    ingestTradeSource("quiver", () => quiver.fetchNewTrades()),
-    ingestTradeSource("senate-efd", () => senateEfd.fetchNewTrades()),
-  ]);
-}
 
 async function ingestTradeSource(name: string, fetchTrades: () => Promise<NormalizedTrade[]>) {
   const trades = await fetchTrades();
@@ -99,7 +89,7 @@ async function recalculateRankings() {
 }
 
 async function updateHealth() {
-  for (const source of [edgar, quiver, senateEfd, houseClerk]) {
+  for (const source of [edgar, quiver, houseClerk]) {
     upsertSourceHealth(db, await source.healthCheck());
   }
 }
@@ -108,7 +98,6 @@ async function main() {
   await startApi();
   scheduleEvery("edgar-congress", config.POLL_EDGAR, () => ingestTradeSource("edgar", () => edgar.fetchNewTrades()));
   scheduleEvery("quiver-congress", config.POLL_QUIVER, () => ingestTradeSource("quiver", () => quiver.fetchNewTrades()));
-  scheduleEvery("senate-efd", config.POLL_SENATE_EFD, () => ingestTradeSource("senate-efd", () => senateEfd.fetchNewTrades()));
   scheduleEvery("house-clerk", config.POLL_HOUSE_CLERK, async () => {
     await houseClerk.fetchNewTrades();
     const detections = houseClerk.lastDetections;

@@ -9,7 +9,6 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
     "seed": "tsx scripts/seed-historical.ts",
-    "backtest": "tsx scripts/backtest.ts",
     "health": "tsx scripts/health-check.ts",
     "test": "vitest run",
     "pm2:start": "pm2 start ecosystem.config.cjs",

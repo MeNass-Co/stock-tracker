@@ -8,16 +8,6 @@ import { rankingsRoutes } from "./routes/rankings.js";
 import { senatorsRoutes } from "./routes/senators.js";
 import { tradesRoutes } from "./routes/trades.js";
 import { FUND_MANAGERS } from "../tracking/fund-manager-tracker.js";
-import type { ServerResponse } from "node:http";
-
-const sseClients = new Set<ServerResponse>();
-
-export function broadcastSSE(data: unknown) {
-  const payload = `data: ${JSON.stringify(data)}\n\n`;
-  for (const client of sseClients) {
-    client.write(payload);
-  }
-}
 
 export function buildServer() {
   const server = Fastify({ logger: true, ignoreTrailingSlash: true });
@@ -50,8 +40,7 @@ export function buildServer() {
     const timer = setInterval(() => {
       reply.raw.write(`data: ${JSON.stringify({ type: "heartbeat", at: new Date().toISOString() })}\n\n`);
     }, 15_000);
-    sseClients.add(reply.raw);
-    reply.raw.on("close", () => { clearInterval(timer); sseClients.delete(reply.raw); });
+    reply.raw.on("close", () => { clearInterval(timer); });
   });
 
   return server;

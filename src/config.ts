@@ -3,10 +3,7 @@ import { z } from "zod";
 
 const envSchema = z.object({
   DISCORD_WEBHOOK_URL: z.string().optional().default(""),
-  DISCORD_BOT_TOKEN: z.string().optional().default(""),
   QUIVER_API_KEY: z.string().optional().default(""),
-  UNUSUAL_WHALES_API_KEY: z.string().optional().default(""),
-  CONGRESS_GOV_API_KEY: z.string().optional().default(""),
   SEC_USER_AGENT: z.string().min(5).default("StockTracker mokhtari.digix@gmail.com"),
   YAHOO_FINANCE_ENABLED: z
     .string()
@@ -19,7 +16,6 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().default("info"),
   POLL_EDGAR: z.coerce.number().int().positive().default(300000),
   POLL_QUIVER: z.coerce.number().int().positive().default(900000),
-  POLL_SENATE_EFD: z.coerce.number().int().positive().default(1800000),
   POLL_HOUSE_CLERK: z.coerce.number().int().positive().default(3600000),
   ALPACA_KEY_ID: z.string().optional().default(""),
   ALPACA_SECRET_KEY: z.string().optional().default(""),

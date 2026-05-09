@@ -62,12 +62,3 @@ export function previousQuarterHoldings(db: Database.Database, fundCik: string, 
       valueThousands: row.value_thousands
     }));
 }
-
-export function calculateHhi(holdings: Pick<FundHoldingInput, "valueThousands">[]) {
-  const total = holdings.reduce((sum, holding) => sum + holding.valueThousands, 0);
-  if (total <= 0) return 0;
-  return holdings.reduce((sum, holding) => {
-    const weight = holding.valueThousands / total;
-    return sum + weight * weight;
-  }, 0);
-}

@@ -254,16 +254,26 @@ export class OrderManager {
       throw error;
     }
 
+    const status = mapOrderStatus(order.status);
     updateStockExecutionOrder(this.db, executionId, {
       alpacaOrderId: order.id,
       alpacaClientOrderId: order.client_order_id,
-      status: mapOrderStatus(order.status)
+      status
     });
 
-    if (mapOrderStatus(order.status) === "filled") {
+    if (status === "filled") {
       const filledPrice = money(order.filled_avg_price ?? undefined);
       const filledQty = money(order.filled_qty) || quantity;
+      const amountUsd = filledPrice > 0 ? filledPrice * filledQty : null;
       const slicePnlUsd = filledPrice > 0 ? (filledPrice - position.avgEntryPrice) * filledQty : null;
+
+      updateStockExecutionFill(this.db, executionId, {
+        status: "filled",
+        filledPrice: filledPrice > 0 ? filledPrice : null,
+        filledQuantity: filledQty,
+        amountUsd
+      });
+
       if (slicePnlUsd !== null && slicePnlUsd < 0) {
         this.trackWashSaleIfNeeded(ticker, slicePnlUsd, order.filled_at ?? new Date().toISOString());
       }

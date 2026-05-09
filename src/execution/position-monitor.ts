@@ -56,15 +56,22 @@ export class PositionMonitor {
 
     if (await this.softStopTriggered(position, currentPrice)) return;
 
+    // Single overlap guard: if a discretionary exit is reserved or a stop is already
+    // resting, no per-sleeve discretionary action (trailing arm, take-profit, time stop)
+    // should fire this tick. softStopTriggered already returned if its preconditions
+    // matched; everything below is non-emergency.
+    if ((position.pendingExitQty ?? 0) > 0) return;
+    if (position.stopLossOrderId || position.trailingStopOrderId) return;
+
     if (position.sleeve === "senator") {
       if (pnlRatio !== null && pnlRatio >= 0.15 && !position.trailingStopActive) await this.activateTrailingStop(position, 8);
       const restingStop = Boolean(position.stopLossOrderId || position.trailingStopOrderId);
-      if (restingStop) return;
-      if (pnlRatio !== null && pnlRatio >= 0.25 && position.status === "open" && (position.pendingExitQty ?? 0) === 0) {
+      if (restingStop) return; // belt-and-suspenders for activateTrailingStop side effect
+      if (pnlRatio !== null && pnlRatio >= 0.25 && position.status === "open") {
         await this.sellHalf(position, "take_profit");
         return;
       }
-      if (pnlRatio !== null && pnlRatio <= -0.15 && (position.pendingExitQty ?? 0) === 0) {
+      if (pnlRatio !== null && pnlRatio <= -0.15) {
         await this.exit(position, "time_stop");
         return;
       }
@@ -148,6 +155,18 @@ export class PositionMonitor {
       const exitReason = orderId === position.trailingStopOrderId ? "trailing_stop" : "stop_loss";
       if (filledQty < position.quantity) {
         applyPartialFill(this.db, position.id, filledQty, pnlUsd, false);
+        if (orderId === position.trailingStopOrderId) {
+          this.db.prepare(
+            "UPDATE stock_positions SET trailing_stop_active = 0, trailing_stop_order_id = NULL WHERE id = ?"
+          ).run(position.id);
+          position.trailingStopActive = false;
+          position.trailingStopOrderId = null;
+        } else {
+          this.db.prepare(
+            "UPDATE stock_positions SET stop_loss_order_id = NULL WHERE id = ?"
+          ).run(position.id);
+          position.stopLossOrderId = null;
+        }
       } else {
         closeStockPosition(this.db, position.id, exitReason, pnlUsd, filledQty);
       }

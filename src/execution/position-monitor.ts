@@ -118,21 +118,30 @@ export class PositionMonitor {
         logger.warn({ orderId, status: order.status, ticker: position.ticker }, "stop order rejected/expired — resubmitting");
         if (orderId === position.trailingStopOrderId) {
           this.db.prepare("UPDATE stock_positions SET trailing_stop_active = 0, trailing_stop_order_id = NULL WHERE id = ?").run(position.id);
+          position.trailingStopActive = false;
+          position.trailingStopOrderId = null;
         } else {
           this.db.prepare("UPDATE stock_positions SET stop_loss_order_id = NULL WHERE id = ?").run(position.id);
+          position.stopLossOrderId = null;
         }
         const newStop = await this.orderManager.resubmitStopLoss(position);
-        if (newStop) updateStockPositionStops(this.db, position.id, { stopLossOrderId: newStop });
+        if (newStop) {
+          updateStockPositionStops(this.db, position.id, { stopLossOrderId: newStop });
+          position.stopLossOrderId = newStop;
+        } else {
+          position.stopLossOrderId = null;
+        }
         continue;
       }
 
       if (order.status !== "filled") continue;
 
       const filledPrice = money(order.filled_avg_price ?? undefined) || position.stopLossPrice || position.currentPrice || position.avgEntryPrice;
-      const pnlUsd = (filledPrice - position.avgEntryPrice) * position.quantity;
+      const filledQty = money(order.filled_qty) || position.quantity;
+      const pnlUsd = (filledPrice - position.avgEntryPrice) * filledQty;
       const pnlRatio = position.avgEntryPrice > 0 ? (filledPrice - position.avgEntryPrice) / position.avgEntryPrice : null;
       const exitReason = orderId === position.trailingStopOrderId ? "trailing_stop" : "stop_loss";
-      closeStockPosition(this.db, position.id, exitReason, pnlUsd, position.quantity);
+      closeStockPosition(this.db, position.id, exitReason, pnlUsd, filledQty);
       this.trackWashSaleIfNeeded(position.ticker, pnlUsd, order.filled_at ?? new Date().toISOString());
       await this.alert("stop_triggered", position, { exitReason, pnlUsd, pnlRatio });
       return true;
@@ -162,11 +171,13 @@ export class PositionMonitor {
       trail_percent: trailPercent.toString(),
       client_order_id: `st-trail-${position.id}-${Date.now()}`
     });
-    updateStockPositionStops(this.db, position.id, {
-      trailingStopActive: true,
-      trailingStopPct: trailPercent,
-      trailingStopOrderId: order.id
-    });
+    this.db.prepare(
+      "UPDATE stock_positions SET trailing_stop_active = 1, trailing_stop_pct = ?, trailing_stop_order_id = ?, stop_loss_order_id = NULL WHERE id = ?"
+    ).run(trailPercent, order.id, position.id);
+    position.stopLossOrderId = null;
+    position.trailingStopActive = true;
+    position.trailingStopPct = trailPercent;
+    position.trailingStopOrderId = order.id;
     await this.alert("trailing_activated", position, { trailPercent });
   }
 

@@ -51,6 +51,8 @@ export class PositionMonitor {
 
     if (await this.stopLossFilled(position)) return;
 
+    if (await this.softStopTriggered(position, currentPrice)) return;
+
     if (position.sleeve === "senator") {
       if (pnlPct >= 0.15 && !position.trailingStopActive) await this.activateTrailingStop(position, 8);
       if (pnlPct >= 0.25 && position.status === "open") {
@@ -81,6 +83,22 @@ export class PositionMonitor {
       )
       .get(position.senatorName, position.ticker, position.openedAt) as { count: number };
     return row.count > 0;
+  }
+
+  private async softStopTriggered(position: StockPosition, currentPrice: number) {
+    if (!position.stopLossPrice || currentPrice > position.stopLossPrice) return false;
+    if (position.stopLossOrderId || position.trailingStopOrderId) return false;
+    const reason = position.sleeve === "13f" ? "fund_exit" : "stop_loss";
+    logger.warn(
+      { positionId: position.id, ticker: position.ticker, currentPrice, stopLossPrice: position.stopLossPrice },
+      "soft-stop: position has no Alpaca stop order; triggering exit at stop price",
+    );
+    await this.orderManager.submitMarketExit(position.id, position.ticker, position.quantity, reason, position.sleeve, true);
+    const pnlUsd = (currentPrice - position.avgEntryPrice) * position.quantity;
+    const pnlPct = (currentPrice - position.avgEntryPrice) / position.avgEntryPrice;
+    if (pnlUsd < 0) this.trackWashSaleIfNeeded(position.ticker, pnlUsd);
+    await this.alert("stop_triggered", position, { exitReason: "soft_stop", pnlUsd, pnlPct });
+    return true;
   }
 
   private async stopLossFilled(position: StockPosition) {

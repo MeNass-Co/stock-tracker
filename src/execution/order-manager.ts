@@ -74,6 +74,9 @@ export class OrderManager {
 
     const notional = risk.adjustedSize ?? size.notional;
     const limitPrice = this.entryLimitPrice(decision);
+    const estimatedQuantity = size.notional > 0
+      ? size.quantity * (notional / size.notional)
+      : size.quantity;
 
     await this.alertEngine?.signalIntent(decision, { notional, limitPrice }).catch(() => {});
 
@@ -83,7 +86,7 @@ export class OrderManager {
       sleeve: decision.sleeve,
       ticker: decision.ticker,
       direction: "buy",
-      quantity: size.quantity,
+      quantity: estimatedQuantity,
       limitPrice,
       amountUsd: notional,
       status: "pending",

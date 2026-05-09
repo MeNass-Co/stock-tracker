@@ -1,0 +1,1 @@
+-- Initial schema mirrors src/db/schema.ts and is executed automatically on startup.

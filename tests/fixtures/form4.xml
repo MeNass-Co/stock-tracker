@@ -1,0 +1,23 @@
+<ownershipDocument>
+  <issuer>
+    <issuerName>Example Corp</issuerName>
+    <issuerTradingSymbol>EXM</issuerTradingSymbol>
+  </issuer>
+  <reportingOwner>
+    <reportingOwnerId>
+      <rptOwnerCik>1234567890</rptOwnerCik>
+      <rptOwnerName>Jane Senator</rptOwnerName>
+    </reportingOwnerId>
+  </reportingOwner>
+  <periodOfReport>2026-04-01</periodOfReport>
+  <nonDerivativeTable>
+    <nonDerivativeTransaction>
+      <transactionDate><value>2026-04-01</value></transactionDate>
+      <transactionCoding><transactionCode>P</transactionCode></transactionCoding>
+      <transactionAmounts>
+        <transactionShares><value>100</value></transactionShares>
+        <transactionPricePerShare><value>50</value></transactionPricePerShare>
+      </transactionAmounts>
+    </nonDerivativeTransaction>
+  </nonDerivativeTable>
+</ownershipDocument>

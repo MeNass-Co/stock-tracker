@@ -1,0 +1,12 @@
+<informationTable>
+  <infoTable>
+    <nameOfIssuer>APPLE INC</nameOfIssuer>
+    <titleOfClass>COM</titleOfClass>
+    <cusip>037833100</cusip>
+    <value>1000</value>
+    <shrsOrPrnAmt>
+      <sshPrnamt>5000</sshPrnamt>
+      <sshPrnamtType>SH</sshPrnamtType>
+    </shrsOrPrnAmt>
+  </infoTable>
+</informationTable>

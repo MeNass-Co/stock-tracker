@@ -47,11 +47,6 @@ export class PositionMonitor {
       return;
     }
 
-    if (await this.hasSenatorExit(position)) {
-      await this.exit(position, "senator_exit");
-      return;
-    }
-
     if (await this.stopLossFilled(position)) return;
 
     if (await this.softStopTriggered(position, currentPrice)) return;
@@ -62,6 +57,11 @@ export class PositionMonitor {
     // matched; everything below is non-emergency.
     if ((position.pendingExitQty ?? 0) > 0) return;
     if (position.stopLossOrderId || position.trailingStopOrderId) return;
+
+    if (await this.hasSenatorExit(position)) {
+      await this.exit(position, "senator_exit");
+      return;
+    }
 
     if (position.sleeve === "senator") {
       if (pnlRatio !== null && pnlRatio >= 0.15 && !position.trailingStopActive) await this.activateTrailingStop(position, 8);
@@ -113,7 +113,14 @@ export class PositionMonitor {
     const pnlRatio = position.avgEntryPrice > 0
       ? (currentPrice - position.avgEntryPrice) / position.avgEntryPrice
       : null;
-    await this.alert("stop_triggered", position, { exitReason: "soft_stop", pnlUsd, pnlRatio });
+    try {
+      await this.alert("stop_triggered", position, { exitReason: "soft_stop", pnlUsd, pnlRatio });
+    } catch (error) {
+      logger.warn(
+        { error, positionId: position.id, ticker: position.ticker },
+        "soft-stop alert failed; exit was already queued, continuing monitor loop"
+      );
+    }
     return true;
   }
 

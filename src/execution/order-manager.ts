@@ -133,16 +133,22 @@ export class OrderManager {
         amountUsd: order.notional ? money(order.notional) : execution.amountUsd
       });
 
-      if (status === "filled" && execution.direction === "buy") {
-        await this.createPositionIfNeeded(execution.id, order, {
-          sleeve: execution.sleeve,
-          triggerType: execution.triggerType,
-          ticker: execution.ticker,
-          senatorName: execution.senatorName,
-          senatorRank: execution.senatorRank,
-          fundName: execution.fundName,
-          sector: null
-        });
+      if (execution.direction === "buy") {
+        const buyFilledQty = money(order.filled_qty);
+        const isTerminalWithFill =
+          status === "filled" ||
+          ((status === "cancelled" || status === "expired") && buyFilledQty > 0);
+        if (isTerminalWithFill) {
+          await this.createPositionIfNeeded(execution.id, order, {
+            sleeve: execution.sleeve,
+            triggerType: execution.triggerType,
+            ticker: execution.ticker,
+            senatorName: execution.senatorName,
+            senatorRank: execution.senatorRank,
+            fundName: execution.fundName,
+            sector: null
+          });
+        }
       } else if (execution.direction === "sell" && (status === "filled" || status === "partial" || status === "cancelled" || status === "expired")) {
         if (!execution.positionId) {
           logger.error({ executionId: execution.id, ticker: execution.ticker }, "sell fill missing position_id; flagging for manual reconciliation");

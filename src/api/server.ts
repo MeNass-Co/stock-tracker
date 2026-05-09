@@ -15,9 +15,10 @@ const sseClients = new Set<ServerResponse>();
 export function broadcastSSE(event: string, data: unknown) {
   let serialized = "null";
   try {
-    serialized = JSON.stringify(data);
+    serialized = JSON.stringify(data) ?? "null";
   } catch {
     // Keep the broadcast path alive on non-serializable payloads.
+    serialized = "null";
   }
   const payload = `event: ${event}\ndata: ${serialized}\n\n`;
   for (const client of sseClients) {

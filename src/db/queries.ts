@@ -469,7 +469,9 @@ export function closeStockPosition(
 }
 
 export function addPendingExit(db: Database.Database, positionId: number, quantity: number) {
-  db.prepare("UPDATE stock_positions SET pending_exit_qty = COALESCE(pending_exit_qty, 0) + ? WHERE id = ?").run(quantity, positionId);
+  db.prepare(
+    "UPDATE stock_positions SET pending_exit_qty = MAX(0, COALESCE(pending_exit_qty, 0) + ?) WHERE id = ?"
+  ).run(quantity, positionId);
 }
 
 export function applyPartialFill(

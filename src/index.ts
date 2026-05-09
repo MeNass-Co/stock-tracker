@@ -89,13 +89,17 @@ async function recalculateRankings() {
 }
 
 async function updateHealth() {
-  for (const source of [edgar, quiver, houseClerk]) {
+  for (const [sourceName, source] of [
+    ["edgar", edgar],
+    ["quiver", quiver],
+    ["house-clerk", houseClerk]
+  ] as const) {
     try {
       upsertSourceHealth(db, await source.healthCheck());
     } catch (error) {
-      logger.warn({ error, source: source.constructor.name }, "source healthCheck failed; recording unhealthy");
+      logger.warn({ error, source: sourceName }, "source healthCheck failed; recording unhealthy");
       upsertSourceHealth(db, {
-        source: source.constructor.name,
+        source: sourceName,
         ok: false,
         checkedAt: new Date().toISOString(),
         message: error instanceof Error ? error.message : String(error)

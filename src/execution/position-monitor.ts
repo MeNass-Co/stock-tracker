@@ -213,7 +213,7 @@ export class PositionMonitor {
       await this.exit(position, "time_stop");
       return;
     }
-    if (ageDays >= 60 && !position.day60ExitedHalf && pnlRatio >= -0.05 && pnlRatio <= 0.05) {
+    if (ageDays >= 60 && ageDays < 90 && !position.day60ExitedHalf && pnlRatio >= -0.05 && pnlRatio <= 0.05) {
       await this.sellHalf(position, "time_stop");
     }
   }

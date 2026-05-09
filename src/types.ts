@@ -104,6 +104,7 @@ export interface SourceHealth {
 export interface StockExecutionInput {
   triggerType: ExecutionTriggerType;
   triggerId?: number | null;
+  positionId?: number | null;
   sleeve: ExecutionSleeve;
   ticker: string;
   direction: ExecutionDirection;
@@ -153,7 +154,8 @@ export interface StockPositionInput {
   sector?: string | null;
   status?: PositionStatus;
   pnlUsd?: number | null;
-  pnlPct?: number | null;
+  pnlRatio?: number | null;
+  pendingExitQty?: number | null;
   exitReason?: string | null;
 }
 

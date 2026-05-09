@@ -235,14 +235,15 @@ export function insertStockExecution(db: Database.Database, execution: StockExec
   const result = db
     .prepare(
       `INSERT INTO stock_executions (
-        trigger_type, trigger_id, sleeve, ticker, direction, quantity, limit_price,
+        trigger_type, trigger_id, position_id, sleeve, ticker, direction, quantity, limit_price,
         filled_price, filled_quantity, amount_usd, alpaca_order_id, alpaca_client_order_id,
         status, senator_name, senator_rank, fund_name, notes, submitted_at, filled_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       execution.triggerType,
       execution.triggerId ?? null,
+      execution.positionId ?? null,
       execution.sleeve,
       execution.ticker.toUpperCase(),
       execution.direction,
@@ -345,7 +346,7 @@ export function insertStockPosition(db: Database.Database, position: StockPositi
         current_price, stop_loss_price, stop_loss_order_id, trailing_stop_active,
         trailing_stop_pct, trailing_stop_order_id, take_profit_price, time_stop_at,
         day30_checked, day60_exited_half, senator_name, senator_rank, fund_name, sector,
-        status, pnl_usd, pnl_pct, exit_reason
+        status, pnl_usd, pnl_ratio, exit_reason
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
@@ -371,7 +372,7 @@ export function insertStockPosition(db: Database.Database, position: StockPositi
       position.sector ?? null,
       position.status ?? "open",
       position.pnlUsd ?? null,
-      position.pnlPct ?? null,
+      position.pnlRatio ?? null,
       position.exitReason ?? null
     );
   return Number(result.lastInsertRowid);
@@ -384,15 +385,15 @@ export function openStockPositions(db: Database.Database) {
 export function updateStockPositionMarket(
   db: Database.Database,
   id: number,
-  input: { currentPrice?: number | null; pnlUsd?: number | null; pnlPct?: number | null }
+  input: { currentPrice?: number | null; pnlUsd?: number | null; pnlRatio?: number | null }
 ) {
   db.prepare(
     `UPDATE stock_positions
      SET current_price = coalesce(?, current_price),
          pnl_usd = coalesce(?, pnl_usd),
-         pnl_pct = coalesce(?, pnl_pct)
+         pnl_ratio = coalesce(?, pnl_ratio)
      WHERE id = ?`
-  ).run(input.currentPrice ?? null, input.pnlUsd ?? null, input.pnlPct ?? null, id);
+  ).run(input.currentPrice ?? null, input.pnlUsd ?? null, input.pnlRatio ?? null, id);
 }
 
 export function updateStockPositionStops(
@@ -422,16 +423,45 @@ export function markStockPositionTimeCheck(db: Database.Database, id: number, fi
   db.prepare(`UPDATE stock_positions SET ${field} = 1 WHERE id = ?`).run(id);
 }
 
-export function closeStockPosition(db: Database.Database, id: number, exitReason: string, pnlUsd?: number | null, pnlPct?: number | null) {
+export function closeStockPosition(db: Database.Database, id: number, exitReason: string, pnlUsd?: number | null, pnlRatio?: number | null) {
   db.prepare(
     `UPDATE stock_positions
      SET status = 'closed',
          closed_at = datetime('now'),
          exit_reason = ?,
          pnl_usd = coalesce(?, pnl_usd),
-         pnl_pct = coalesce(?, pnl_pct)
+         pnl_ratio = coalesce(?, pnl_ratio),
+         pending_exit_qty = 0
      WHERE id = ?`
-  ).run(exitReason, pnlUsd ?? null, pnlPct ?? null, id);
+  ).run(exitReason, pnlUsd ?? null, pnlRatio ?? null, id);
+}
+
+export function addPendingExit(db: Database.Database, positionId: number, quantity: number) {
+  db.prepare("UPDATE stock_positions SET pending_exit_qty = COALESCE(pending_exit_qty, 0) + ? WHERE id = ?").run(quantity, positionId);
+}
+
+export function applyPartialFill(db: Database.Database, positionId: number, filledQuantity: number) {
+  db.prepare(
+    `UPDATE stock_positions
+     SET quantity = MAX(0, quantity - ?),
+         pending_exit_qty = MAX(0, COALESCE(pending_exit_qty, 0) - ?),
+         status = CASE WHEN MAX(0, quantity - ?) <= 0 THEN 'closed' ELSE 'partial' END
+     WHERE id = ?`
+  ).run(filledQuantity, filledQuantity, filledQuantity, positionId);
+}
+
+export function findPositionById(db: Database.Database, id: number) {
+  const row = db.prepare("SELECT * FROM stock_positions WHERE id = ?").get(id);
+  return row ? mapStockPosition(row) : null;
+}
+
+export function hasRebalanceRun(db: Database.Database, fundCik: string, reportDate: string) {
+  const row = db.prepare("SELECT 1 AS hit FROM rebalance_runs WHERE fund_cik = ? AND report_date = ?").get(fundCik, reportDate) as { hit: number } | undefined;
+  return Boolean(row);
+}
+
+export function markRebalanceRun(db: Database.Database, fundCik: string, reportDate: string) {
+  db.prepare("INSERT OR IGNORE INTO rebalance_runs (fund_cik, report_date) VALUES (?, ?)").run(fundCik, reportDate);
 }
 
 export function insertPortfolioSnapshot(
@@ -442,7 +472,7 @@ export function insertPortfolioSnapshot(
     thirteenfSleeveValue: number;
     cashValue: number;
     dailyPnl: number;
-    dailyPnlPct: number;
+    dailyPnlRatio: number;
     cumulativePnl: number;
     openPositions: number;
     highWaterMark: number;
@@ -451,7 +481,7 @@ export function insertPortfolioSnapshot(
   db.prepare(
     `INSERT INTO portfolio_snapshots (
       total_value, senator_sleeve_value, thirteenf_sleeve_value, cash_value,
-      daily_pnl, daily_pnl_pct, cumulative_pnl, open_positions, high_water_mark
+      daily_pnl, daily_pnl_ratio, cumulative_pnl, open_positions, high_water_mark
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     snapshot.totalValue,
@@ -459,7 +489,7 @@ export function insertPortfolioSnapshot(
     snapshot.thirteenfSleeveValue,
     snapshot.cashValue,
     snapshot.dailyPnl,
-    snapshot.dailyPnlPct,
+    snapshot.dailyPnlRatio,
     snapshot.cumulativePnl,
     snapshot.openPositions,
     snapshot.highWaterMark
@@ -495,6 +525,7 @@ function mapStockExecution(row: any): StockExecution {
     id: row.id,
     triggerType: row.trigger_type,
     triggerId: row.trigger_id,
+    positionId: row.position_id,
     sleeve: row.sleeve,
     ticker: row.ticker,
     direction: row.direction,
@@ -541,7 +572,8 @@ function mapStockPosition(row: any): StockPosition {
     sector: row.sector,
     status: row.status,
     pnlUsd: row.pnl_usd,
-    pnlPct: row.pnl_pct,
+    pnlRatio: row.pnl_ratio,
+    pendingExitQty: row.pending_exit_qty,
     openedAt: row.opened_at,
     closedAt: row.closed_at,
     exitReason: row.exit_reason

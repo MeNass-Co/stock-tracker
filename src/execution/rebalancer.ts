@@ -5,7 +5,7 @@ import { logger } from "../utils/logger.js";
 import { AlpacaClient } from "./alpaca-client.js";
 import { OrderManager } from "./order-manager.js";
 import { SignalFilter } from "./signal-filter.js";
-import { insertStockExecution, openStockPositions } from "../db/queries.js";
+import { hasRebalanceRun, markRebalanceRun, openStockPositions } from "../db/queries.js";
 
 export class Rebalancer {
   private readonly signalFilter: SignalFilter;
@@ -24,13 +24,12 @@ export class Rebalancer {
     if (diffs.length === 0) return;
     const first = diffs[0];
     if (!first) return;
-    const key = rebalanceKey(first.fundCik, first.reportDate);
-    if (this.hasRebalanceMarker(key)) return;
+    if (hasRebalanceRun(this.db, first.fundCik, first.reportDate)) return;
     if (!this.isRebalanceWindow(first.filingDate)) {
-      logger.info({ filingDate: first.filingDate, fundName: first.fundName, key }, "13F filing queued until delayed rebalance window");
+      logger.info({ filingDate: first.filingDate, fundName: first.fundName, fundCik: first.fundCik }, "13F filing queued until delayed rebalance window");
       return;
     }
-    await this.executeDiffs(diffs, key);
+    await this.executeDiffs(diffs, first.fundCik, first.reportDate);
   }
 
   async runDueRebalances() {
@@ -44,17 +43,16 @@ export class Rebalancer {
       .all() as { fund_cik: string; report_date: string }[];
 
     for (const row of rows) {
-      const key = rebalanceKey(row.fund_cik, row.report_date);
-      if (this.hasRebalanceMarker(key)) continue;
+      if (hasRebalanceRun(this.db, row.fund_cik, row.report_date)) continue;
       const diffs = this.db
         .prepare("SELECT * FROM fund_holdings WHERE fund_cik = ? AND report_date = ? AND change_type IS NOT NULL")
         .all(row.fund_cik, row.report_date)
         .map(mapHolding);
-      await this.executeDiffs(diffs, key);
+      await this.executeDiffs(diffs, row.fund_cik, row.report_date);
     }
   }
 
-  private async executeDiffs(diffs: FundHoldingInput[], key: string) {
+  private async executeDiffs(diffs: FundHoldingInput[], fundCik: string, reportDate: string) {
     const exitsByTicker = this.crossFundExits(diffs);
     for (const [ticker, count] of exitsByTicker) {
       if (count >= 2) await this.exitTicker(ticker, "fund_exit");
@@ -83,7 +81,7 @@ export class Rebalancer {
       size: buys.length,
       reason: `processed ${sells.length} sells and ${buys.length} buys`
     });
-    this.markRebalanceComplete(key);
+    markRebalanceRun(this.db, fundCik, reportDate);
   }
 
   private async rebalanceSell(holding: FundHoldingInput) {
@@ -95,10 +93,7 @@ export class Rebalancer {
     const trimPct = holding.changeType === "exit" ? 1 : Math.min(1, Math.abs(holding.changePct ?? 0));
     for (const position of positions) {
       const quantity = position.quantity * trimPct;
-      await this.orderManager.submitMarketExit(position.id, position.ticker, quantity, holding.changeType === "exit" ? "fund_exit" : "fund_exit", "13f", trimPct >= 0.999);
-      if (trimPct < 0.999) {
-        this.db.prepare("UPDATE stock_positions SET quantity = quantity - ?, status = 'partial' WHERE id = ?").run(quantity, position.id);
-      }
+      await this.orderManager.submitMarketExit(position.id, position.ticker, quantity, "fund_exit", "13f", trimPct >= 0.999);
     }
   }
 
@@ -133,29 +128,6 @@ export class Rebalancer {
     return daysSinceFiling >= 3 && daysSinceFiling <= 5;
   }
 
-  private hasRebalanceMarker(key: string) {
-    const row = this.db
-      .prepare("SELECT id FROM stock_executions WHERE trigger_type = 'manual' AND notes = ? LIMIT 1")
-      .get(key) as { id: number } | undefined;
-    return Boolean(row);
-  }
-
-  private markRebalanceComplete(key: string) {
-    insertStockExecution(this.db, {
-      triggerType: "manual",
-      sleeve: "13f",
-      ticker: "13F_REBALANCE",
-      direction: "buy",
-      quantity: 0,
-      amountUsd: 0,
-      status: "filled",
-      notes: key
-    });
-  }
-}
-
-function rebalanceKey(fundCik: string, reportDate: string) {
-  return `rebalance:${fundCik}:${reportDate}`;
 }
 
 function mapHolding(row: any): FundHoldingInput {

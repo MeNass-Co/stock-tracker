@@ -36,8 +36,8 @@ export class PositionMonitor {
     const alpacaPosition = await this.alpaca.getPosition(position.ticker);
     const currentPrice = alpacaPosition ? money(alpacaPosition.current_price) : position.currentPrice ?? position.avgEntryPrice;
     const pnlUsd = (currentPrice - position.avgEntryPrice) * position.quantity;
-    const pnlPct = (currentPrice - position.avgEntryPrice) / position.avgEntryPrice;
-    updateStockPositionMarket(this.db, position.id, { currentPrice, pnlUsd, pnlPct });
+    const pnlRatio = (currentPrice - position.avgEntryPrice) / position.avgEntryPrice;
+    updateStockPositionMarket(this.db, position.id, { currentPrice, pnlUsd, pnlRatio });
 
     if (this.flashCrash(position, currentPrice)) {
       await this.handleFlashCrash(position, currentPrice);
@@ -54,18 +54,18 @@ export class PositionMonitor {
     if (await this.softStopTriggered(position, currentPrice)) return;
 
     if (position.sleeve === "senator") {
-      if (pnlPct >= 0.15 && !position.trailingStopActive) await this.activateTrailingStop(position, 8);
-      if (pnlPct >= 0.25 && position.status === "open") {
+      if (pnlRatio >= 0.15 && !position.trailingStopActive) await this.activateTrailingStop(position, 8);
+      if (pnlRatio >= 0.25 && position.status === "open") {
         await this.sellHalf(position, "take_profit");
         return;
       }
-      if (pnlPct <= -0.15) {
+      if (pnlRatio <= -0.15) {
         await this.exit(position, "time_stop");
         return;
       }
-      await this.checkSenatorTimeStops(position, pnlPct);
+      await this.checkSenatorTimeStops(position, pnlRatio);
     } else {
-      if (pnlPct >= 0.2 && !position.trailingStopActive) await this.activateTrailingStop(position, 8);
+      if (pnlRatio >= 0.2 && !position.trailingStopActive) await this.activateTrailingStop(position, 8);
     }
   }
 
@@ -95,9 +95,9 @@ export class PositionMonitor {
     );
     await this.orderManager.submitMarketExit(position.id, position.ticker, position.quantity, reason, position.sleeve, true);
     const pnlUsd = (currentPrice - position.avgEntryPrice) * position.quantity;
-    const pnlPct = (currentPrice - position.avgEntryPrice) / position.avgEntryPrice;
+    const pnlRatio = (currentPrice - position.avgEntryPrice) / position.avgEntryPrice;
     if (pnlUsd < 0) this.trackWashSaleIfNeeded(position.ticker, pnlUsd);
-    await this.alert("stop_triggered", position, { exitReason: "soft_stop", pnlUsd, pnlPct });
+    await this.alert("stop_triggered", position, { exitReason: "soft_stop", pnlUsd, pnlRatio });
     return true;
   }
 
@@ -121,11 +121,11 @@ export class PositionMonitor {
 
       const filledPrice = money(order.filled_avg_price ?? undefined) || position.stopLossPrice || position.currentPrice || position.avgEntryPrice;
       const pnlUsd = (filledPrice - position.avgEntryPrice) * position.quantity;
-      const pnlPct = (filledPrice - position.avgEntryPrice) / position.avgEntryPrice;
+      const pnlRatio = (filledPrice - position.avgEntryPrice) / position.avgEntryPrice;
       const exitReason = orderId === position.trailingStopOrderId ? "trailing_stop" : "stop_loss";
-      closeStockPosition(this.db, position.id, exitReason, pnlUsd, pnlPct);
+      closeStockPosition(this.db, position.id, exitReason, pnlUsd, pnlRatio);
       this.trackWashSaleIfNeeded(position.ticker, pnlUsd);
-      await this.alert("stop_triggered", position, { exitReason, pnlUsd, pnlPct });
+      await this.alert("stop_triggered", position, { exitReason, pnlUsd, pnlRatio });
       return true;
     }
 
@@ -163,17 +163,17 @@ export class PositionMonitor {
   private async sellHalf(position: StockPosition, reason: "take_profit" | "time_stop") {
     const quantity = position.quantity / 2;
     await this.orderManager.submitMarketExit(position.id, position.ticker, quantity, reason, position.sleeve, false);
-    this.db.prepare("UPDATE stock_positions SET quantity = quantity - ?, status = 'partial', day60_exited_half = 1 WHERE id = ?").run(quantity, position.id);
+    this.db.prepare("UPDATE stock_positions SET day60_exited_half = 1 WHERE id = ?").run(position.id);
     await this.alert(reason, position, { quantity });
   }
 
-  private async checkSenatorTimeStops(position: StockPosition, pnlPct: number) {
+  private async checkSenatorTimeStops(position: StockPosition, pnlRatio: number) {
     const ageDays = Math.floor((Date.now() - new Date(position.openedAt).getTime()) / 86_400_000);
-    if (ageDays >= 30 && !position.day30Checked && pnlPct < -0.05) {
+    if (ageDays >= 30 && !position.day30Checked && pnlRatio < -0.05) {
       markStockPositionTimeCheck(this.db, position.id, "day30_checked");
-      await this.alert("time_stop", position, { action: "day30_flag", pnlPct });
+      await this.alert("time_stop", position, { action: "day30_flag", pnlRatio });
     }
-    if (ageDays >= 60 && !position.day60ExitedHalf && pnlPct >= -0.05 && pnlPct <= 0.05) {
+    if (ageDays >= 60 && !position.day60ExitedHalf && pnlRatio >= -0.05 && pnlRatio <= 0.05) {
       await this.sellHalf(position, "time_stop");
     }
     if (ageDays >= 90 && !position.trailingStopActive) {

@@ -1,0 +1,11 @@
+import { openDatabase } from "../src/db/schema.js";
+const db = openDatabase("/tmp/stocktracker-test.db");
+const cols = db.prepare("PRAGMA table_info(stock_positions)").all() as { name: string }[];
+console.log("stock_positions:", cols.map((c) => c.name).join(", "));
+const execCols = db.prepare("PRAGMA table_info(stock_executions)").all() as { name: string }[];
+console.log("stock_executions:", execCols.map((c) => c.name).join(", "));
+const snapCols = db.prepare("PRAGMA table_info(portfolio_snapshots)").all() as { name: string }[];
+console.log("portfolio_snapshots:", snapCols.map((c) => c.name).join(", "));
+const rebal = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rebalance_runs'").get();
+console.log("rebalance_runs exists:", Boolean(rebal));
+db.close();

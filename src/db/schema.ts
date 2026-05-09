@@ -96,6 +96,7 @@ CREATE TABLE IF NOT EXISTS stock_executions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   trigger_type TEXT NOT NULL CHECK(trigger_type IN ('senator_trade', '13f_diff', 'stop_loss', 'take_profit', 'trailing_stop', 'time_stop', 'senator_exit', 'fund_exit', 'manual')),
   trigger_id INTEGER,
+  position_id INTEGER REFERENCES stock_positions(id),
   sleeve TEXT NOT NULL CHECK(sleeve IN ('senator', '13f')),
   ticker TEXT NOT NULL,
   direction TEXT NOT NULL CHECK(direction IN ('buy', 'sell')),
@@ -140,7 +141,8 @@ CREATE TABLE IF NOT EXISTS stock_positions (
   sector TEXT,
   status TEXT CHECK(status IN ('open', 'partial', 'closed')) DEFAULT 'open',
   pnl_usd REAL,
-  pnl_pct REAL,
+  pnl_ratio REAL,
+  pending_exit_qty REAL DEFAULT 0,
   opened_at TEXT DEFAULT (datetime('now')),
   closed_at TEXT,
   exit_reason TEXT
@@ -153,11 +155,18 @@ CREATE TABLE IF NOT EXISTS portfolio_snapshots (
   thirteenf_sleeve_value REAL,
   cash_value REAL,
   daily_pnl REAL,
-  daily_pnl_pct REAL,
+  daily_pnl_ratio REAL,
   cumulative_pnl REAL,
   open_positions INTEGER,
   high_water_mark REAL,
   snapshot_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS rebalance_runs (
+  fund_cik TEXT NOT NULL,
+  report_date TEXT NOT NULL,
+  completed_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (fund_cik, report_date)
 );
 
 CREATE TABLE IF NOT EXISTS wash_sale_tracker (
@@ -183,11 +192,37 @@ CREATE INDEX IF NOT EXISTS idx_stock_pos_ticker ON stock_positions(ticker);
 CREATE INDEX IF NOT EXISTS idx_snapshots_time ON portfolio_snapshots(snapshot_at);
 `;
 
+const idempotentMigrations: string[] = [
+  "ALTER TABLE stock_executions ADD COLUMN position_id INTEGER REFERENCES stock_positions(id)",
+  "ALTER TABLE stock_positions ADD COLUMN pending_exit_qty REAL DEFAULT 0",
+  "ALTER TABLE stock_positions RENAME COLUMN pnl_pct TO pnl_ratio",
+  "ALTER TABLE portfolio_snapshots RENAME COLUMN daily_pnl_pct TO daily_pnl_ratio",
+  `CREATE TABLE IF NOT EXISTS rebalance_runs (
+    fund_cik TEXT NOT NULL,
+    report_date TEXT NOT NULL,
+    completed_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (fund_cik, report_date)
+  )`
+];
+
+function runIdempotentMigrations(db: Database.Database) {
+  for (const stmt of idempotentMigrations) {
+    try {
+      db.exec(stmt);
+    } catch (error) {
+      const message = String((error as Error).message ?? error).toLowerCase();
+      const benign = /duplicate column|already exists|no such column/.test(message);
+      if (!benign) throw error;
+    }
+  }
+}
+
 export function openDatabase(path: string) {
   mkdirSync(dirname(path), { recursive: true });
   const db = new Database(path);
   db.pragma("foreign_keys = ON");
   db.pragma("journal_mode = WAL");
   db.exec(schemaSql);
+  runIdempotentMigrations(db);
   return db;
 }

@@ -93,7 +93,7 @@ export class RiskEngine {
     const highWaterMark = Math.max(totalValue, latest?.high_water_mark ?? totalValue);
     const startOfDay = this.startOfDayValue() ?? totalValue;
     const dailyPnl = totalValue - startOfDay;
-    const dailyPnlPct = startOfDay > 0 ? dailyPnl / startOfDay : 0;
+    const dailyPnlRatio = startOfDay > 0 ? dailyPnl / startOfDay : 0;
     const cumulativePnl = latest ? totalValue - latest.high_water_mark : 0;
 
     insertPortfolioSnapshot(this.db, {
@@ -102,12 +102,12 @@ export class RiskEngine {
       thirteenfSleeveValue: sleeveValue("13f"),
       cashValue,
       dailyPnl,
-      dailyPnlPct,
+      dailyPnlRatio,
       cumulativePnl,
       openPositions: localPositions.length,
       highWaterMark
     });
-    logger.info({ totalValue, dailyPnl, dailyPnlPct, openPositions: localPositions.length }, "portfolio snapshot stored");
+    logger.info({ totalValue, dailyPnl, dailyPnlRatio, openPositions: localPositions.length }, "portfolio snapshot stored");
   }
 
   private accountStop(account: AlpacaAccount): RiskCheck | null {

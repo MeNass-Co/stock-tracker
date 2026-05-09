@@ -160,7 +160,9 @@ export class OrderManager {
         if (deltaQty > 0) {
           const filledPrice = money(order.filled_avg_price ?? undefined);
           const slicePnlUsd = filledPrice > 0 ? (filledPrice - position.avgEntryPrice) * deltaQty : null;
-          if (slicePnlUsd !== null && slicePnlUsd < 0) this.trackWashSaleIfNeeded(position.ticker, slicePnlUsd);
+          if (slicePnlUsd !== null && slicePnlUsd < 0) {
+            this.trackWashSaleIfNeeded(position.ticker, slicePnlUsd, order.filled_at ?? new Date().toISOString());
+          }
           const remainingAfter = Math.max(0, position.quantity - deltaQty);
           if (status === "filled" && remainingAfter <= 0) {
             closeStockPosition(this.db, position.id, execution.triggerType ?? "manual", slicePnlUsd, deltaQty);
@@ -252,7 +254,9 @@ export class OrderManager {
       const filledPrice = money(order.filled_avg_price ?? undefined);
       const filledQty = money(order.filled_qty) || quantity;
       const slicePnlUsd = filledPrice > 0 ? (filledPrice - position.avgEntryPrice) * filledQty : null;
-      if (slicePnlUsd !== null && slicePnlUsd < 0) this.trackWashSaleIfNeeded(ticker, slicePnlUsd);
+      if (slicePnlUsd !== null && slicePnlUsd < 0) {
+        this.trackWashSaleIfNeeded(ticker, slicePnlUsd, order.filled_at ?? new Date().toISOString());
+      }
       if (closeOnFill) {
         closeStockPosition(this.db, positionId, reason, slicePnlUsd, filledQty);
       } else {
@@ -451,9 +455,9 @@ export class OrderManager {
     });
   }
 
-  private trackWashSaleIfNeeded(ticker: string, pnlUsd: number) {
-    const saleDate = new Date().toISOString().slice(0, 10);
-    const cooldown = new Date();
+  private trackWashSaleIfNeeded(ticker: string, pnlUsd: number, fillTimestamp: string) {
+    const saleDate = fillTimestamp.slice(0, 10);
+    const cooldown = new Date(`${saleDate}T00:00:00.000Z`);
     cooldown.setUTCDate(cooldown.getUTCDate() + 31);
     insertWashSale(this.db, ticker, saleDate, cooldown.toISOString().slice(0, 10), Math.abs(pnlUsd));
   }

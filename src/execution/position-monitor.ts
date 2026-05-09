@@ -116,6 +116,11 @@ export class PositionMonitor {
 
       if (order.status === "rejected" || order.status === "expired") {
         logger.warn({ orderId, status: order.status, ticker: position.ticker }, "stop order rejected/expired — resubmitting");
+        if (orderId === position.trailingStopOrderId) {
+          this.db.prepare("UPDATE stock_positions SET trailing_stop_active = 0, trailing_stop_order_id = NULL WHERE id = ?").run(position.id);
+        } else {
+          this.db.prepare("UPDATE stock_positions SET stop_loss_order_id = NULL WHERE id = ?").run(position.id);
+        }
         const newStop = await this.orderManager.resubmitStopLoss(position);
         if (newStop) updateStockPositionStops(this.db, position.id, { stopLossOrderId: newStop });
         continue;
@@ -128,7 +133,7 @@ export class PositionMonitor {
       const pnlRatio = position.avgEntryPrice > 0 ? (filledPrice - position.avgEntryPrice) / position.avgEntryPrice : null;
       const exitReason = orderId === position.trailingStopOrderId ? "trailing_stop" : "stop_loss";
       closeStockPosition(this.db, position.id, exitReason, pnlUsd, position.quantity);
-      this.trackWashSaleIfNeeded(position.ticker, pnlUsd);
+      this.trackWashSaleIfNeeded(position.ticker, pnlUsd, order.filled_at ?? new Date().toISOString());
       await this.alert("stop_triggered", position, { exitReason, pnlUsd, pnlRatio });
       return true;
     }
@@ -142,6 +147,7 @@ export class PositionMonitor {
         await this.alpaca.cancelOrder(position.stopLossOrderId);
       } catch (error) {
         logger.warn({ error, positionId: position.id }, "failed to cancel stop loss before trailing stop activation");
+        return;
       }
     }
 
@@ -204,23 +210,31 @@ export class PositionMonitor {
 
   private async handleFlashCrash(position: StockPosition, currentPrice: number) {
     const widenedStop = currentPrice * 0.95;
-    updateStockPositionStops(this.db, position.id, { stopLossPrice: widenedStop });
     if (position.stopLossOrderId) {
       try {
         await this.alpaca.replaceOrder(position.stopLossOrderId, {
           stop_price: widenedStop.toFixed(2),
           limit_price: (widenedStop * 0.98).toFixed(2)
         });
-      } catch { /* order may already be filled/cancelled */ }
+        updateStockPositionStops(this.db, position.id, { stopLossPrice: widenedStop });
+      } catch (error) {
+        logger.warn(
+          { error, positionId: position.id, stopLossOrderId: position.stopLossOrderId, widenedStop },
+          "flash-crash: failed to widen Alpaca stop; DB unchanged"
+        );
+        return;
+      }
+    } else {
+      updateStockPositionStops(this.db, position.id, { stopLossPrice: widenedStop });
     }
     await this.alert("stop_triggered", position, { action: "flash_crash_hold", widenedStop });
     logger.warn({ ticker: position.ticker, currentPrice, widenedStop }, "flash crash protection widened stop and skipped auto-sell");
   }
 
-  private trackWashSaleIfNeeded(ticker: string, pnlUsd: number) {
+  private trackWashSaleIfNeeded(ticker: string, pnlUsd: number, fillTimestamp: string) {
     if (pnlUsd >= 0) return;
-    const saleDate = new Date().toISOString().slice(0, 10);
-    const cooldown = new Date();
+    const saleDate = fillTimestamp.slice(0, 10);
+    const cooldown = new Date(`${saleDate}T00:00:00.000Z`);
     cooldown.setUTCDate(cooldown.getUTCDate() + 31);
     insertWashSale(this.db, ticker, saleDate, cooldown.toISOString().slice(0, 10), Math.abs(pnlUsd));
   }

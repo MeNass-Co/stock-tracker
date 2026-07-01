@@ -78,10 +78,10 @@ describe("SignalFilter gate matrix", () => {
     expect(decision.reason).toContain("below $15,000");
   });
 
-  it("rejects filings delayed more than 45 days", async () => {
-    const decision = await filter.evaluateTrade(trade({ tradeDate: "2026-01-01", filingDate: "2026-03-01" }));
+  it("rejects filings delayed more than 15 days", async () => {
+    const decision = await filter.evaluateTrade(trade({ tradeDate: "2026-06-01", filingDate: "2026-06-20" }));
     expect(decision.copy).toBe(false);
-    expect(decision.reason).toContain("45 days");
+    expect(decision.reason).toContain("15 days");
   });
 
   it("rejects broad ETFs", async () => {

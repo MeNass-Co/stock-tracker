@@ -79,7 +79,10 @@ export class SignalFilter {
     if (trade.direction === "buy" && amount < 15_000) return this.reject("amount midpoint below $15,000", "senator", "buy", ticker);
 
     const filingDelayDays = daysBetween(trade.tradeDate, trade.filingDate);
-    if (filingDelayDays > 45) return this.reject("filing delay above 45 days", "senator", "buy", ticker);
+    // 15-day cap backed by the alpha study (analysis/REPORT.md): disclosures
+    // filed ≤15d run +0.27% median excess @30d (n=127) vs −2.00% for 15–30d
+    // (n=339) — past two weeks the information is stale and the edge is gone.
+    if (filingDelayDays > 15) return this.reject("filing delay above 15 days", "senator", "buy", ticker);
 
     const rank = this.latestRankFor(trade.politician.name, chamber);
     const rankCap = chamber === "senate" ? 30 : 15;

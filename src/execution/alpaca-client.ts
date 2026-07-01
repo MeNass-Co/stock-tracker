@@ -215,9 +215,21 @@ export class AlpacaClient {
     const price = Number(order.filled_avg_price);
     if (!Number.isFinite(price) || price <= 0) return order;
     const direction = order.side === "buy" ? 1 : -1;
-    const randomization = 0.5 + Math.random();
+    // Deterministic per order id: repeated getOrder reads must not re-randomize
+    // the fill price, or P&L becomes non-reproducible across polls.
+    const randomization = 0.5 + hash01(order.id);
     return { ...order, filled_avg_price: (price * (1 + direction * 0.001 * randomization)).toFixed(4) };
   }
+}
+
+/** FNV-1a hash of a string mapped to [0, 1). */
+function hash01(input: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0) / 0x100000000;
 }
 
 export class AlpacaError extends Error {

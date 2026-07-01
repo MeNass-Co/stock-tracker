@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import type { AlertEngine } from "../alerting/alert-engine.js";
 import {
+  DUST_EPSILON,
   applyPartialFill,
   closeStockPosition,
   insertWashSale,
@@ -16,6 +17,8 @@ import { OrderManager } from "./order-manager.js";
 
 export class PositionMonitor {
   private readonly orderManager: OrderManager;
+  /** Positions whose soft-stop was deferred because the market is closed — log once per session. */
+  private readonly deferredSoftStops = new Set<number>();
 
   constructor(
     private readonly db: Database.Database,
@@ -30,6 +33,70 @@ export class PositionMonitor {
     const positions = openStockPositions(this.db);
     for (const position of positions) {
       await this.checkPosition(position);
+    }
+  }
+
+  /**
+   * Reconcile local open positions against Alpaca. Dust-sized local rows with
+   * no Alpaca counterpart are auto-closed; material divergences are alerted
+   * and logged, never auto-acted on.
+   */
+  async reconcile() {
+    let alpacaPositions;
+    try {
+      alpacaPositions = await this.alpaca.getPositions();
+    } catch (error) {
+      logger.warn({ error }, "reconciliation skipped: Alpaca positions unavailable");
+      return;
+    }
+    const alpacaByTicker = new Map(alpacaPositions.map((p) => [p.symbol.toUpperCase(), Number(p.qty)]));
+    const local = openStockPositions(this.db);
+    const divergences: string[] = [];
+
+    const localByTicker = new Map<string, number>();
+    for (const position of local) {
+      const ticker = position.ticker.toUpperCase();
+      localByTicker.set(ticker, (localByTicker.get(ticker) ?? 0) + position.quantity);
+    }
+
+    for (const position of local) {
+      const ticker = position.ticker.toUpperCase();
+      if (!alpacaByTicker.has(ticker)) {
+        if (position.quantity <= DUST_EPSILON) {
+          closeStockPosition(this.db, position.id, "reconcile_dust");
+          logger.warn({ positionId: position.id, ticker, quantity: position.quantity }, "reconciliation auto-closed dust position absent at Alpaca");
+        } else {
+          divergences.push(`${ticker}: local position #${position.id} holds ${position.quantity} but Alpaca has no position`);
+        }
+      }
+    }
+
+    for (const [ticker, localQty] of localByTicker) {
+      const alpacaQty = alpacaByTicker.get(ticker);
+      if (alpacaQty !== undefined && Math.abs(alpacaQty - localQty) > Math.max(DUST_EPSILON, localQty * 0.001)) {
+        divergences.push(`${ticker}: local qty ${localQty} vs Alpaca qty ${alpacaQty}`);
+      }
+    }
+
+    for (const [ticker, alpacaQty] of alpacaByTicker) {
+      if (!localByTicker.has(ticker)) {
+        divergences.push(`${ticker}: Alpaca holds ${alpacaQty} with no local open position`);
+      }
+    }
+
+    if (divergences.length > 0) {
+      logger.error({ divergences }, "position reconciliation found divergences (not auto-acted)");
+      await this.alertEngine
+        ?.systemAlert({
+          type: "reconciliation",
+          severity: "high",
+          title: `Position reconciliation: ${divergences.length} divergence(s)`,
+          body: divergences.join("\n"),
+          data: { divergences }
+        })
+        .catch((error) => logger.warn({ error }, "reconciliation alert failed"));
+    } else {
+      logger.info({ localTickers: localByTicker.size, alpacaTickers: alpacaByTicker.size }, "position reconciliation clean");
     }
   }
 
@@ -103,6 +170,23 @@ export class PositionMonitor {
     if (!position.stopLossPrice || currentPrice > position.stopLossPrice) return false;
     if (position.stopLossOrderId || position.trailingStopOrderId) return false;
     if ((position.pendingExitQty ?? 0) > 0) return false;
+
+    // Never fire a market exit outside regular hours: the order cannot fill,
+    // gets EOD-cancelled, and the soft-stop re-fires — an all-night
+    // cancel/resubmit churn loop. Defer to the next open instead.
+    const clock = await this.safeGetClock();
+    if (!clock?.is_open) {
+      if (!this.deferredSoftStops.has(position.id)) {
+        this.deferredSoftStops.add(position.id);
+        logger.warn(
+          { positionId: position.id, ticker: position.ticker, currentPrice, stopLossPrice: position.stopLossPrice },
+          "soft-stop condition met but market is closed; deferring exit to next open"
+        );
+      }
+      return true;
+    }
+    this.deferredSoftStops.delete(position.id);
+
     const reason = position.sleeve === "13f" ? "fund_exit" : "stop_loss";
     logger.warn(
       { positionId: position.id, ticker: position.ticker, currentPrice, stopLossPrice: position.stopLossPrice },
@@ -160,7 +244,8 @@ export class PositionMonitor {
       const pnlUsd = (filledPrice - position.avgEntryPrice) * filledQty;
       const pnlRatio = position.avgEntryPrice > 0 ? (filledPrice - position.avgEntryPrice) / position.avgEntryPrice : null;
       const exitReason = orderId === position.trailingStopOrderId ? "trailing_stop" : "stop_loss";
-      if (filledQty < position.quantity) {
+      const remainder = position.quantity - filledQty;
+      if (remainder > DUST_EPSILON) {
         applyPartialFill(this.db, position.id, filledQty, pnlUsd, false);
         if (orderId === position.trailingStopOrderId) {
           this.db.prepare(
@@ -174,6 +259,12 @@ export class PositionMonitor {
           ).run(position.id);
           position.stopLossOrderId = null;
         }
+        // Stops are whole-share only, so a fractional tail (< 1 share) can
+        // never be covered by a resubmitted stop. Flush it with a market
+        // exit (day TIF via submitMarketExit) while the market is open.
+        if (remainder < 1) {
+          await this.flushFractionalTail(position, remainder, exitReason);
+        }
       } else {
         closeStockPosition(this.db, position.id, exitReason, pnlUsd, filledQty);
       }
@@ -183,6 +274,32 @@ export class PositionMonitor {
     }
 
     return false;
+  }
+
+  private async flushFractionalTail(position: StockPosition, remainder: number, exitReason: string) {
+    try {
+      const clock = await this.safeGetClock();
+      if (!clock?.is_open) {
+        logger.info(
+          { positionId: position.id, ticker: position.ticker, remainder },
+          "fractional tail after stop fill; market closed, exit deferred to next open"
+        );
+        return;
+      }
+      await this.orderManager.submitMarketExit(position.id, position.ticker, remainder, exitReason, position.sleeve, true);
+      logger.info({ positionId: position.id, ticker: position.ticker, remainder }, "fractional tail market exit submitted");
+    } catch (error) {
+      logger.warn({ error, positionId: position.id, ticker: position.ticker, remainder }, "fractional tail exit failed; will retry via soft-stop path");
+    }
+  }
+
+  private async safeGetClock() {
+    try {
+      return await this.alpaca.getClock();
+    } catch (error) {
+      logger.warn({ error }, "Alpaca clock lookup failed");
+      return null;
+    }
   }
 
   private async activateTrailingStop(position: StockPosition, trailPercent: number) {

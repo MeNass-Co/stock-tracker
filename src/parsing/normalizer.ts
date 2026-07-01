@@ -13,8 +13,24 @@ export const AMOUNT_MIDPOINTS: Record<string, number> = {
   "Over $50,000,000": 75_000_000
 };
 
+const NAME_SUFFIX_TOKENS = /\b(?:jr|sr|ii|iii|iv)\.?(?=\s|$)/gi;
+
+/**
+ * Canonical politician name: suffix tokens (Jr/Sr/II/III/IV, any casing,
+ * optional trailing period) removed, whitespace collapsed, trailing commas
+ * dropped. Prevents duplicate politician rows like
+ * "August Lee Pfluger" vs "August Lee Pfluger Ii".
+ */
+export function canonicalizePoliticianName(name: string) {
+  return name
+    .replace(NAME_SUFFIX_TOKENS, " ")
+    .replace(/\s*,\s*(?=\s|$)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function normalizeName(name: string) {
-  return name.replace(/\s+/g, " ").trim();
+  return canonicalizePoliticianName(name);
 }
 
 export function normalizeTicker(ticker: string | null | undefined) {

@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { config } from "../config.js";
 import {
+  DUST_EPSILON,
   addPendingExit,
   applyPartialFill,
   applyPostFillAction,
@@ -12,6 +13,7 @@ import {
   markExecutionReconcileFailed,
   openStockPositions,
   pendingStockExecutions,
+  recordSignalDecision,
   updateStockExecutionFill,
   updateStockExecutionOrder
 } from "../db/queries.js";
@@ -43,6 +45,7 @@ export class OrderManager {
   async submitSignal(decision: SignalDecision) {
     if (!config.EXECUTION_ENABLED) {
       logger.info({ ticker: decision.ticker, reason: decision.reason }, "execution disabled; signal accepted but not submitted");
+      this.recordOutcome(decision, "skipped", "execution disabled");
       return null;
     }
     if (!decision.copy) return null;
@@ -55,11 +58,13 @@ export class OrderManager {
     const clock = await this.alpaca.getClock();
     if (!clock.is_open || !isExecutionWindow()) {
       logger.info({ ticker: decision.ticker, isOpen: clock.is_open }, "outside execution window; entry skipped");
+      this.recordOutcome(decision, "skipped", `outside execution window (market ${clock.is_open ? "open" : "closed"})`);
       return null;
     }
 
     if (this.movedMoreThanFivePercent(decision)) {
       logger.info({ ticker: decision.ticker }, "stock moved more than 5% since filing; entry skipped");
+      this.recordOutcome(decision, "skipped", "moved more than 5% since filing");
       return null;
     }
 
@@ -68,12 +73,14 @@ export class OrderManager {
     const size = this.sizer.calculate(decision, account, referencePrice);
     if (!size.allowed) {
       logger.info({ ticker: decision.ticker, reason: size.reason }, "position sizing rejected signal");
+      this.recordOutcome(decision, "skipped", `sizing: ${size.reason}`);
       return null;
     }
 
     const risk = await this.risk.checkNewOrder(decision, size.notional);
     if (!risk.allowed) {
       logger.info({ ticker: decision.ticker, reason: risk.reason }, "risk engine rejected signal");
+      this.recordOutcome(decision, "skipped", `risk: ${risk.reason ?? "rejected"}`);
       return null;
     }
 
@@ -113,9 +120,11 @@ export class OrderManager {
       });
       await this.onOrderUpdate(executionId, order, decision);
       logger.info({ executionId, orderId: order.id, ticker: decision.ticker, notional }, "entry order submitted");
+      this.recordOutcome(decision, "ordered", `entry order submitted (execution ${executionId})`);
       return order;
     } catch (error) {
       updateStockExecutionOrder(this.db, executionId, { status: "failed", notes: error instanceof Error ? error.message : "order submit failed" });
+      this.recordOutcome(decision, "skipped", `order submit failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
@@ -170,7 +179,7 @@ export class OrderManager {
             this.trackWashSaleIfNeeded(position.ticker, slicePnlUsd, order.filled_at ?? new Date().toISOString());
           }
           const remainingAfter = Math.max(0, position.quantity - deltaQty);
-          if (status === "filled" && remainingAfter <= 0) {
+          if (status === "filled" && remainingAfter <= DUST_EPSILON) {
             closeStockPosition(this.db, position.id, execution.triggerType ?? "manual", slicePnlUsd, deltaQty);
           } else {
             applyPartialFill(this.db, position.id, deltaQty, slicePnlUsd);
@@ -295,9 +304,11 @@ export class OrderManager {
 
   private async submitExitSignal(decision: SignalDecision) {
     const positions = openStockPositions(this.db).filter((position) => position.ticker === decision.ticker && position.sleeve === decision.sleeve);
-    if (positions.length > 0) {
-      await this.alertEngine?.signalIntent(decision).catch(() => {});
+    if (positions.length === 0) {
+      this.recordOutcome(decision, "skipped", "no open positions for exit");
+      return null;
     }
+    await this.alertEngine?.signalIntent(decision).catch(() => {});
     for (const position of positions) {
       await this.submitMarketExit(
         position.id,
@@ -307,6 +318,7 @@ export class OrderManager {
         position.sleeve
       );
     }
+    this.recordOutcome(decision, "ordered", `exit submitted for ${positions.length} position(s)`);
     return null;
   }
 
@@ -456,14 +468,37 @@ export class OrderManager {
     return Boolean(filingPrice && currentPrice && Math.abs(currentPrice - filingPrice) / filingPrice > 0.05);
   }
 
+  // Only orders created BEFORE today's 15:45 ET cutoff are EOD-cancelled.
+  // A pure time-of-day check cancelled after-hours resubmissions on the next
+  // tick, feeding a cancel/resubmit churn loop every ~10 minutes.
   private shouldCancelByEndOfDay(createdAt: string) {
-    void createdAt;
-    return isAfterEtTime(15, 45);
+    const parts = etParts();
+    const nowMinutes = parts.hour * 60 + parts.minute;
+    const cutoffMinutes = 15 * 60 + 45;
+    if (nowMinutes < cutoffMinutes) return false;
+    const cutoffMs = Date.now() - (nowMinutes - cutoffMinutes) * 60_000;
+    return parseTimestamp(createdAt).getTime() < cutoffMs;
   }
 
   private shouldResubmit(createdAt: string) {
-    const ageMs = Date.now() - new Date(createdAt).getTime();
+    const ageMs = Date.now() - parseTimestamp(createdAt).getTime();
     return ageMs > 2 * 60 * 60 * 1000 && isExecutionWindow();
+  }
+
+  private recordOutcome(decision: SignalDecision, outcome: "ordered" | "skipped", reason: string) {
+    try {
+      recordSignalDecision(this.db, {
+        tradeId: decision.triggerId ?? null,
+        sleeve: decision.sleeve,
+        ticker: decision.ticker || null,
+        decision: outcome,
+        reason,
+        fundCik: typeof decision.metadata?.fundCik === "string" ? decision.metadata.fundCik : null,
+        reportDate: typeof decision.metadata?.reportDate === "string" ? decision.metadata.reportDate : null
+      });
+    } catch (error) {
+      logger.warn({ error, ticker: decision.ticker }, "failed to persist order outcome decision");
+    }
   }
 
   private async resubmitLimit(executionId: number, order: AlpacaOrder) {
@@ -498,7 +533,7 @@ function mapOrderStatus(status: string) {
   return "submitted";
 }
 
-function isExecutionWindow() {
+export function isExecutionWindow() {
   return !isBeforeEtTime(10, 0) && !isAfterEtTime(15, 45);
 }
 
@@ -510,6 +545,12 @@ function isBeforeEtTime(hour: number, minute: number) {
 function isAfterEtTime(hour: number, minute: number) {
   const parts = etParts();
   return parts.hour > hour || (parts.hour === hour && parts.minute >= minute);
+}
+
+/** Parse a DB/API timestamp; sqlite datetime('now') strings are UTC without a zone marker. */
+export function parseTimestamp(value: string) {
+  if (/[zZ]$|[+-]\d\d:?\d\d$/.test(value)) return new Date(value);
+  return new Date(`${value.replace(" ", "T")}Z`);
 }
 
 function etParts() {

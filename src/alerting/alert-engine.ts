@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { detectClusters } from "../ranking/cluster-detector.js";
 import type { AlertInput, FundHoldingInput, NormalizedTrade } from "../types.js";
 import type { SignalDecision } from "../execution/signal-filter.js";
-import { insertAlert, markAlertDiscordSent } from "../db/queries.js";
+import { insertAlert, markAlertDiscordSent, sourcesDownSince } from "../db/queries.js";
 import { DiscordAlerter } from "./discord.js";
 import { formatSignalIntent } from "./formatters.js";
 import { logger } from "../utils/logger.js";
@@ -51,13 +51,110 @@ export class AlertEngine {
     }
   }
 
+  /**
+   * Alert only when the ranked set actually changed: compares the top-30
+   * senate / top-15 house lists (membership AND order) between the two most
+   * recent ranking batches, and puts the diff in the body. The previous
+   * unconditional daily alert carried no information.
+   */
   async rankingChanged() {
+    const batches = this.db
+      .prepare("SELECT DISTINCT computed_at FROM rankings ORDER BY computed_at DESC LIMIT 2")
+      .all() as Array<{ computed_at: string }>;
+    if (batches.length === 0) return;
+
+    const topFor = (computedAt: string) =>
+      this.db
+        .prepare(
+          `SELECT p.name, p.chamber, r.rank_position
+           FROM rankings r
+           JOIN politicians p ON p.id = r.politician_id
+           WHERE r.computed_at = ?
+             AND ((p.chamber = 'senate' AND r.rank_position <= 30) OR (p.chamber = 'house' AND r.rank_position <= 15))
+           ORDER BY p.chamber, r.rank_position`
+        )
+        .all(computedAt) as Array<{ name: string; chamber: string; rank_position: number }>;
+
+    const current = topFor(batches[0]!.computed_at);
+    const previous = batches.length > 1 ? topFor(batches[1]!.computed_at) : [];
+    const key = (row: { name: string; chamber: string; rank_position: number }) => `${row.chamber}|${row.name}|${row.rank_position}`;
+    const currentKeys = new Set(current.map(key));
+    const previousKeys = new Set(previous.map(key));
+    if (batches.length > 1 && current.length === previous.length && current.every((row) => previousKeys.has(key(row)))) {
+      logger.info("ranking recomputed; ranked set unchanged, no alert");
+      return;
+    }
+
+    const entered = current.filter((row) => !previous.some((p) => p.chamber === row.chamber && p.name === row.name));
+    const left = previous.filter((row) => !current.some((c) => c.chamber === row.chamber && c.name === row.name));
+    const moved = current.filter((row) => {
+      const before = previous.find((p) => p.chamber === row.chamber && p.name === row.name);
+      return before && before.rank_position !== row.rank_position;
+    });
+    const lines: string[] = [];
+    if (previous.length === 0) lines.push(`First ranked batch: ${current.length} politicians in the copy set.`);
+    if (entered.length) lines.push(`Entered: ${entered.map((r) => `${r.name} (${r.chamber} #${r.rank_position})`).join(", ")}.`);
+    if (left.length) lines.push(`Left: ${left.map((r) => `${r.name} (${r.chamber})`).join(", ")}.`);
+    if (moved.length) {
+      lines.push(
+        `Moved: ${moved
+          .map((r) => {
+            const before = previous.find((p) => p.chamber === r.chamber && p.name === r.name)!;
+            return `${r.name} (${r.chamber} #${before.rank_position}→#${r.rank_position})`;
+          })
+          .join(", ")}.`
+      );
+    }
+
     await this.persistAndSend({
       type: "ranking",
       severity: "low",
-      title: "Politician rankings updated",
-      body: "Composite ranking recalculated using alpha, win rate, Sharpe-like ratio, profit factor, frequency, and recency."
+      title: "Politician copy-set ranking changed",
+      body: lines.join(" ") || "Ranked set changed.",
+      data: { entered, left, moved }
     });
+  }
+
+  /** Discord alert when a source has been down/erroring for more than 24h (deduped to one alert per source per 24h). */
+  async checkSourceHealthAlerts() {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    for (const source of sourcesDownSince(this.db, cutoff)) {
+      await this.dedupedSystemAlert({
+        type: "source_down",
+        severity: "high",
+        title: `Source down: ${source.source}`,
+        body: `${source.source} has been failing health checks since ${source.down_since} (UTC). Last error: ${source.message ?? "unknown"}.`,
+        data: source
+      });
+    }
+  }
+
+  /** Discord alert when no congressional trade has been ingested for more than 7 days. */
+  async checkIngestionStalled() {
+    const row = this.db.prepare("SELECT max(detected_at) AS latest FROM trades").get() as { latest: string | null };
+    if (!row.latest) return;
+    const ageMs = Date.now() - new Date(row.latest.includes("Z") || row.latest.includes("+") ? row.latest : `${row.latest.replace(" ", "T")}Z`).getTime();
+    if (ageMs <= 7 * 24 * 60 * 60 * 1000) return;
+    await this.dedupedSystemAlert({
+      type: "ingestion_stalled",
+      severity: "high",
+      title: "Congressional trade ingestion stalled",
+      body: `No congressional trades ingested since ${row.latest} (UTC) — more than 7 days. Check Quiver/house-clerk sources.`,
+      data: { latestDetectedAt: row.latest }
+    });
+  }
+
+  /** Generic system alert used by reconciliation and rebalance instrumentation. */
+  async systemAlert(alert: AlertInput) {
+    await this.persistAndSend(alert);
+  }
+
+  private async dedupedSystemAlert(alert: AlertInput, windowHours = 24) {
+    const already = this.db
+      .prepare("SELECT 1 FROM alerts WHERE type = ? AND title = ? AND created_at > datetime('now', ?) LIMIT 1")
+      .get(alert.type, alert.title, `-${windowHours} hours`);
+    if (already) return;
+    await this.persistAndSend(alert);
   }
 
   async signalIntent(decision: SignalDecision, sizing?: { notional: number; limitPrice: number | null }) {

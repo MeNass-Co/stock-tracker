@@ -73,6 +73,8 @@ export interface FundHoldingInput {
 
 export interface RankingMetrics {
   politicianId: number;
+  /** Ranking is partitioned per chamber; metrics without a chamber form their own partition. */
+  chamber?: string | null;
   alpha: number;
   winRate: number;
   sharpe: number;
@@ -98,7 +100,7 @@ export interface SourceHealth {
   source: string;
   ok: boolean;
   checkedAt: string;
-  message?: string;
+  message?: string | null;
 }
 
 export interface StockExecutionInput {

@@ -74,6 +74,9 @@ export async function calculateMetrics(db: Database.Database, prices: PriceCache
     }
   }
 
+  const chamberRows = db.prepare("SELECT id, chamber FROM politicians").all() as Array<{ id: number; chamber: string | null }>;
+  const chamberById = new Map(chamberRows.map((row) => [row.id, row.chamber]));
+
   const results: RankingMetrics[] = [];
 
   for (const [politicianId, trips] of tripsByPolitician) {
@@ -112,6 +115,7 @@ export async function calculateMetrics(db: Database.Database, prices: PriceCache
 
     results.push({
       politicianId,
+      chamber: chamberById.get(politicianId) ?? null,
       alpha: annualizedAlpha,
       winRate: alphas.filter((v) => v > 0).length / alphas.length,
       sharpe: std === 0 ? 0 : rawAlpha / std,

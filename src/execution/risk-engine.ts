@@ -1,9 +1,20 @@
 import type Database from "better-sqlite3";
 import { config } from "../config.js";
-import { countExecutionsToday, insertPortfolioSnapshot, latestPortfolioSnapshot, openStockPositions } from "../db/queries.js";
+import {
+  countExecutionsToday,
+  getAppState,
+  insertPortfolioSnapshot,
+  latestPortfolioSnapshot,
+  openStockPositions,
+  setAppState
+} from "../db/queries.js";
 import { logger } from "../utils/logger.js";
+import type { PriceCache } from "../prices/price-cache.js";
 import { AlpacaClient, type AlpacaAccount } from "./alpaca-client.js";
 import type { SignalDecision } from "./signal-filter.js";
+
+const INITIAL_CAPITAL_USD = 100_000;
+const SPY_BENCHMARK_SHARES_KEY = "spy_benchmark_shares";
 
 export interface RiskCheck {
   allowed: boolean;
@@ -14,7 +25,8 @@ export interface RiskCheck {
 export class RiskEngine {
   constructor(
     private readonly db: Database.Database,
-    private readonly alpaca = new AlpacaClient()
+    private readonly alpaca = new AlpacaClient(),
+    private readonly prices: PriceCache | null = null
   ) {}
 
   async checkNewOrder(decision: SignalDecision, requestedSize: number): Promise<RiskCheck> {
@@ -94,7 +106,11 @@ export class RiskEngine {
     const startOfDay = this.startOfDayValue() ?? totalValue;
     const dailyPnl = totalValue - startOfDay;
     const dailyPnlRatio = startOfDay > 0 ? dailyPnl / startOfDay : 0;
-    const cumulativePnl = latest ? totalValue - latest.high_water_mark : 0;
+    // Real cumulative P&L vs initial capital; the old value (totalValue − HWM)
+    // was actually drawdown-vs-high-water-mark, which now lives in drawdown_usd.
+    const cumulativePnl = totalValue - INITIAL_CAPITAL_USD;
+    const drawdownUsd = totalValue - highWaterMark;
+    const spyEquity = await this.spyBenchmarkEquity();
 
     insertPortfolioSnapshot(this.db, {
       totalValue,
@@ -104,10 +120,36 @@ export class RiskEngine {
       dailyPnl,
       dailyPnlRatio,
       cumulativePnl,
+      drawdownUsd,
+      spyEquity,
       openPositions: localPositions.length,
       highWaterMark
     });
-    logger.info({ totalValue, dailyPnl, dailyPnlRatio, openPositions: localPositions.length }, "portfolio snapshot stored");
+    logger.info({ totalValue, dailyPnl, dailyPnlRatio, spyEquity, openPositions: localPositions.length }, "portfolio snapshot stored");
+  }
+
+  /**
+   * $100k SPY buy-and-hold benchmark: the share count is fixed at the first
+   * snapshot that sees a SPY price (persisted in app_state) and thereafter
+   * spy_equity = shares × latest SPY price.
+   */
+  private async spyBenchmarkEquity(): Promise<number | null> {
+    if (!this.prices) return null;
+    try {
+      const latest = await this.prices.getLatestCloses("SPY");
+      const spyPrice = latest?.currentPrice;
+      if (!spyPrice || spyPrice <= 0) return null;
+      let shares = Number(getAppState(this.db, SPY_BENCHMARK_SHARES_KEY));
+      if (!Number.isFinite(shares) || shares <= 0) {
+        shares = INITIAL_CAPITAL_USD / spyPrice;
+        setAppState(this.db, SPY_BENCHMARK_SHARES_KEY, String(shares));
+        logger.info({ shares, spyPrice }, "SPY benchmark share count fixed");
+      }
+      return shares * spyPrice;
+    } catch (error) {
+      logger.warn({ error }, "SPY benchmark price unavailable; spy_equity null for this snapshot");
+      return null;
+    }
   }
 
   private accountStop(account: AlpacaAccount): RiskCheck | null {

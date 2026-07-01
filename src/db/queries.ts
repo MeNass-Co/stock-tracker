@@ -14,6 +14,13 @@ import type {
   StockPositionInput
 } from "../types.js";
 import { openDatabase } from "./schema.js";
+import { canonicalizePoliticianName } from "../parsing/normalizer.js";
+
+/**
+ * Quantities at or below this are dust: float-math remainders from partial
+ * fills (e.g. 5.55e-17 shares) that must never keep a position alive.
+ */
+export const DUST_EPSILON = 1e-6;
 
 let singleton: Database.Database | null = null;
 
@@ -23,9 +30,10 @@ export function getDb() {
 }
 
 export function upsertPolitician(db: Database.Database, input: PoliticianInput): number {
+  const name = canonicalizePoliticianName(input.name);
   const existing = db
     .prepare("SELECT id FROM politicians WHERE name = ? AND chamber = ?")
-    .get(input.name, input.chamber) as { id: number } | undefined;
+    .get(name, input.chamber) as { id: number } | undefined;
   const committees = JSON.stringify(input.committees ?? []);
 
   if (existing) {
@@ -46,7 +54,7 @@ export function upsertPolitician(db: Database.Database, input: PoliticianInput):
       `INSERT INTO politicians (name, chamber, state, party, committees, cik)
        VALUES (?, ?, ?, ?, ?, ?)`
     )
-    .run(input.name, input.chamber, input.state ?? null, input.party ?? null, committees, input.cik ?? null);
+    .run(name, input.chamber, input.state ?? null, input.party ?? null, committees, input.cik ?? null);
   return Number(result.lastInsertRowid);
 }
 
@@ -186,11 +194,23 @@ export function getCachedPrice(db: Database.Database, ticker: string, date: stri
 
 export function upsertSourceHealth(db: Database.Database, health: SourceHealth) {
   db.prepare(
-    `INSERT INTO source_health (source, ok, checked_at, message)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO source_health (source, ok, checked_at, message, down_since)
+     VALUES (?, ?, ?, ?, CASE WHEN ? = 0 THEN ? ELSE NULL END)
      ON CONFLICT(source) DO UPDATE SET
-       ok = excluded.ok, checked_at = excluded.checked_at, message = excluded.message`
-  ).run(health.source, health.ok ? 1 : 0, health.checkedAt, health.message ?? null);
+       ok = excluded.ok,
+       checked_at = excluded.checked_at,
+       message = excluded.message,
+       down_since = CASE
+         WHEN excluded.ok = 1 THEN NULL
+         ELSE COALESCE(source_health.down_since, excluded.checked_at)
+       END`
+  ).run(health.source, health.ok ? 1 : 0, health.checkedAt, health.message ?? null, health.ok ? 1 : 0, health.checkedAt);
+}
+
+export function sourcesDownSince(db: Database.Database, cutoffIso: string) {
+  return db
+    .prepare("SELECT source, down_since, message FROM source_health WHERE ok = 0 AND down_since IS NOT NULL AND down_since <= ?")
+    .all(cutoffIso) as Array<{ source: string; down_since: string; message: string | null }>;
 }
 
 export function latestRankings(db: Database.Database, limit = 50) {
@@ -440,7 +460,7 @@ export function closeStockPosition(
 ) {
   db.prepare(
     `UPDATE stock_positions
-     SET quantity = MAX(0, quantity - COALESCE(?, quantity)),
+     SET quantity = CASE WHEN quantity - COALESCE(?, quantity) <= ${DUST_EPSILON} THEN 0 ELSE quantity - COALESCE(?, quantity) END,
          status = 'closed',
          closed_at = datetime('now'),
          exit_reason = ?,
@@ -457,6 +477,7 @@ export function closeStockPosition(
      WHERE id = ?`
   ).run(
     sliceFilledQty ?? null,
+    sliceFilledQty ?? null,
     exitReason,
     slicePnlUsd ?? null,
     sliceFilledQty ?? null,
@@ -469,9 +490,16 @@ export function closeStockPosition(
 }
 
 export function addPendingExit(db: Database.Database, positionId: number, quantity: number) {
+  // Clamp dust remainders to zero so a float-math residue never keeps a
+  // reservation alive (dust pending_exit_qty used to block soft-stops forever).
   db.prepare(
-    "UPDATE stock_positions SET pending_exit_qty = MAX(0, COALESCE(pending_exit_qty, 0) + ?) WHERE id = ?"
-  ).run(quantity, positionId);
+    `UPDATE stock_positions
+     SET pending_exit_qty = CASE
+       WHEN MAX(0, COALESCE(pending_exit_qty, 0) + @delta) <= ${DUST_EPSILON} THEN 0
+       ELSE MAX(0, COALESCE(pending_exit_qty, 0) + @delta)
+     END
+     WHERE id = @id`
+  ).run({ delta: quantity, id: positionId });
 }
 
 export function applyPartialFill(
@@ -481,82 +509,91 @@ export function applyPartialFill(
   slicePnlUsd?: number | null,
   releaseReservation: boolean = true
 ) {
-  if (releaseReservation) {
-    db.prepare(
-      `UPDATE stock_positions
-       SET quantity = MAX(0, quantity - ?),
-           pending_exit_qty = MAX(0, COALESCE(pending_exit_qty, 0) - ?),
-           realized_pnl_usd = COALESCE(realized_pnl_usd, 0) + COALESCE(?, 0),
-           realized_qty = COALESCE(realized_qty, 0) + ?,
-           status = CASE WHEN MAX(0, quantity - ?) <= 0 THEN 'closed' ELSE 'partial' END,
-           closed_at = CASE WHEN MAX(0, quantity - ?) <= 0 THEN CURRENT_TIMESTAMP ELSE closed_at END,
-           pnl_usd = CASE
-             WHEN MAX(0, quantity - ?) <= 0
-               THEN COALESCE(realized_pnl_usd, 0) + COALESCE(?, 0)
-             ELSE pnl_usd
-           END,
-           pnl_ratio = CASE
-             WHEN MAX(0, quantity - ?) <= 0
-               AND avg_entry_price > 0
-               AND (COALESCE(realized_qty, 0) + ?) > 0
-               THEN (COALESCE(realized_pnl_usd, 0) + COALESCE(?, 0))
-                    / (avg_entry_price * (COALESCE(realized_qty, 0) + ?))
-             ELSE pnl_ratio
-           END
-       WHERE id = ?`
-    ).run(
-      filledQuantity,
-      filledQuantity,
-      slicePnlUsd ?? null,
-      filledQuantity,
-      filledQuantity,
-      filledQuantity,
-      filledQuantity,
-      slicePnlUsd ?? null,
-      filledQuantity,
-      filledQuantity,
-      slicePnlUsd ?? null,
-      filledQuantity,
-      positionId
-    );
-    return;
-  }
-
+  // A remainder at or below DUST_EPSILON closes the position outright and
+  // zeroes pending_exit_qty — float-math dust must never survive as 'partial'.
+  const closes = `quantity - @qty <= ${DUST_EPSILON}`;
   db.prepare(
     `UPDATE stock_positions
-     SET quantity = MAX(0, quantity - ?),
-         realized_pnl_usd = COALESCE(realized_pnl_usd, 0) + COALESCE(?, 0),
-         realized_qty = COALESCE(realized_qty, 0) + ?,
-         status = CASE WHEN MAX(0, quantity - ?) <= 0 THEN 'closed' ELSE 'partial' END,
-         closed_at = CASE WHEN MAX(0, quantity - ?) <= 0 THEN CURRENT_TIMESTAMP ELSE closed_at END,
+     SET quantity = CASE WHEN ${closes} THEN 0 ELSE quantity - @qty END,
+         pending_exit_qty = CASE
+           WHEN ${closes} THEN 0
+           WHEN @release = 1 THEN MAX(0, COALESCE(pending_exit_qty, 0) - @qty)
+           ELSE pending_exit_qty
+         END,
+         realized_pnl_usd = COALESCE(realized_pnl_usd, 0) + COALESCE(@pnl, 0),
+         realized_qty = COALESCE(realized_qty, 0) + @qty,
+         status = CASE WHEN ${closes} THEN 'closed' ELSE 'partial' END,
+         closed_at = CASE WHEN ${closes} THEN CURRENT_TIMESTAMP ELSE closed_at END,
          pnl_usd = CASE
-           WHEN MAX(0, quantity - ?) <= 0
-             THEN COALESCE(realized_pnl_usd, 0) + COALESCE(?, 0)
+           WHEN ${closes}
+             THEN COALESCE(realized_pnl_usd, 0) + COALESCE(@pnl, 0)
            ELSE pnl_usd
          END,
          pnl_ratio = CASE
-           WHEN MAX(0, quantity - ?) <= 0
+           WHEN ${closes}
              AND avg_entry_price > 0
-             AND (COALESCE(realized_qty, 0) + ?) > 0
-             THEN (COALESCE(realized_pnl_usd, 0) + COALESCE(?, 0))
-                  / (avg_entry_price * (COALESCE(realized_qty, 0) + ?))
+             AND (COALESCE(realized_qty, 0) + @qty) > 0
+             THEN (COALESCE(realized_pnl_usd, 0) + COALESCE(@pnl, 0))
+                  / (avg_entry_price * (COALESCE(realized_qty, 0) + @qty))
            ELSE pnl_ratio
          END
-     WHERE id = ?`
+     WHERE id = @id`
+  ).run({
+    qty: filledQuantity,
+    pnl: slicePnlUsd ?? null,
+    release: releaseReservation ? 1 : 0,
+    id: positionId
+  });
+}
+
+export interface SignalDecisionRecord {
+  tradeId?: number | null;
+  sleeve: "senator" | "13f";
+  ticker?: string | null;
+  decision: "accept" | "reject" | "ordered" | "skipped";
+  reason: string;
+  fundCik?: string | null;
+  reportDate?: string | null;
+}
+
+export function recordSignalDecision(db: Database.Database, record: SignalDecisionRecord) {
+  db.prepare(
+    `INSERT INTO signal_decisions (trade_id, sleeve, ticker, decision, reason, fund_cik, report_date)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
   ).run(
-    filledQuantity,
-    slicePnlUsd ?? null,
-    filledQuantity,
-    filledQuantity,
-    filledQuantity,
-    filledQuantity,
-    slicePnlUsd ?? null,
-    filledQuantity,
-    filledQuantity,
-    slicePnlUsd ?? null,
-    filledQuantity,
-    positionId
+    record.tradeId ?? null,
+    record.sleeve,
+    record.ticker ?? null,
+    record.decision,
+    record.reason,
+    record.fundCik ?? null,
+    record.reportDate ?? null
   );
+}
+
+export function loadSeenHouseDocIds(db: Database.Database): Set<string> {
+  const rows = db.prepare("SELECT doc_id FROM house_seen_docs").all() as Array<{ doc_id: string }>;
+  return new Set(rows.map((row) => row.doc_id));
+}
+
+export function markHouseDocsSeen(db: Database.Database, docIds: string[]) {
+  const stmt = db.prepare("INSERT OR IGNORE INTO house_seen_docs (doc_id) VALUES (?)");
+  const tx = db.transaction((ids: string[]) => {
+    for (const id of ids) stmt.run(id);
+  });
+  tx(docIds);
+}
+
+export function getAppState(db: Database.Database, key: string): string | null {
+  const row = db.prepare("SELECT value FROM app_state WHERE key = ?").get(key) as { value: string } | undefined;
+  return row?.value ?? null;
+}
+
+export function setAppState(db: Database.Database, key: string, value: string) {
+  db.prepare(
+    `INSERT INTO app_state (key, value, updated_at) VALUES (?, ?, datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+  ).run(key, value);
 }
 
 export function applyPostFillAction(db: Database.Database, executionId: number) {
@@ -645,6 +682,8 @@ export function insertPortfolioSnapshot(
     dailyPnl: number;
     dailyPnlRatio: number;
     cumulativePnl: number;
+    drawdownUsd?: number | null;
+    spyEquity?: number | null;
     openPositions: number;
     highWaterMark: number;
   }
@@ -652,8 +691,9 @@ export function insertPortfolioSnapshot(
   db.prepare(
     `INSERT INTO portfolio_snapshots (
       total_value, senator_sleeve_value, thirteenf_sleeve_value, cash_value,
-      daily_pnl, daily_pnl_ratio, cumulative_pnl, open_positions, high_water_mark
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      daily_pnl, daily_pnl_ratio, cumulative_pnl, drawdown_usd, spy_equity,
+      open_positions, high_water_mark
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     snapshot.totalValue,
     snapshot.senatorSleeveValue,
@@ -662,6 +702,8 @@ export function insertPortfolioSnapshot(
     snapshot.dailyPnl,
     snapshot.dailyPnlRatio,
     snapshot.cumulativePnl,
+    snapshot.drawdownUsd ?? null,
+    snapshot.spyEquity ?? null,
     snapshot.openPositions,
     snapshot.highWaterMark
   );

@@ -1,5 +1,5 @@
 import { config } from "../config.js";
-import type { NormalizedTrade } from "../types.js";
+import type { NormalizedTrade, SourceHealth } from "../types.js";
 import { directionFromTransaction, midpointForRange, normalizeDate, normalizeName, normalizeTicker } from "../parsing/normalizer.js";
 import { retry } from "../utils/retry.js";
 import { BaseSource } from "./base-source.js";
@@ -7,6 +7,28 @@ import { BaseSource } from "./base-source.js";
 export class QuiverSource extends BaseSource {
   readonly name = "quiver";
   private readonly endpoint = "https://api.quiverquant.com/beta/live/congresstrading";
+
+  /** Honest health check: actually hits the endpoint instead of hardcoding ok. */
+  async healthCheck(): Promise<SourceHealth> {
+    const checkedAt = new Date().toISOString();
+    if (!config.QUIVER_API_KEY) {
+      return { source: this.name, ok: false, checkedAt, message: "QUIVER_API_KEY not configured" };
+    }
+    try {
+      const response = await fetch(this.endpoint, {
+        headers: { Authorization: `Bearer ${config.QUIVER_API_KEY}` }
+      });
+      await response.body?.cancel().catch(() => {});
+      return {
+        source: this.name,
+        ok: response.ok,
+        checkedAt,
+        message: response.ok ? null : `HTTP ${response.status}`
+      };
+    } catch (error) {
+      return { source: this.name, ok: false, checkedAt, message: error instanceof Error ? error.message : String(error) };
+    }
+  }
 
   async fetchNewTrades(): Promise<NormalizedTrade[]> {
     if (!config.QUIVER_API_KEY) return [];

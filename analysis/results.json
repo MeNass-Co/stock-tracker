@@ -1,0 +1,2119 @@
+{
+  "meta": {
+    "generatedAt": "2026-07-01T21:37:36.343Z",
+    "dataEnd": "2026-06-30",
+    "tradesConsidered": 1486,
+    "observationsWithEntry": 1440,
+    "droppedNoPriceData": 39,
+    "droppedNoEntryDate": 7,
+    "horizonsCalendarDays": [
+      30,
+      90,
+      180
+    ],
+    "entryRule": "close of first trading day strictly after filing_date",
+    "benchmark": "SPY (IEX feed, adjusted)",
+    "statsRule": "full windows only; median + 5/95 winsorized mean; excess vs SPY"
+  },
+  "overall": {
+    "buys": {
+      "h30": {
+        "n": 593,
+        "medianExcess": -0.0147,
+        "winsorizedMeanExcess": -0.0084,
+        "hitRate": 0.3997
+      },
+      "h90": {
+        "n": 289,
+        "medianExcess": -0.0377,
+        "winsorizedMeanExcess": -0.0194,
+        "hitRate": 0.3875
+      },
+      "h180": {
+        "n": 104,
+        "medianExcess": -0.0202,
+        "winsorizedMeanExcess": -0.0363,
+        "hitRate": 0.3846
+      }
+    },
+    "sells": {
+      "h30": {
+        "n": 607,
+        "medianExcess": -0.0132,
+        "winsorizedMeanExcess": -0.0104,
+        "hitRate": 0.4465
+      },
+      "h90": {
+        "n": 340,
+        "medianExcess": -0.0222,
+        "winsorizedMeanExcess": -0.0115,
+        "hitRate": 0.4324
+      },
+      "h180": {
+        "n": 130,
+        "medianExcess": 0.0003,
+        "winsorizedMeanExcess": 0.0184,
+        "hitRate": 0.5385
+      }
+    }
+  },
+  "byChamber": {
+    "buys": {
+      "senate": {
+        "h30": {
+          "n": 229,
+          "medianExcess": -0.006,
+          "winsorizedMeanExcess": 0.0064,
+          "hitRate": 0.4061
+        },
+        "h90": {
+          "n": 211,
+          "medianExcess": -0.0229,
+          "winsorizedMeanExcess": -0.0046,
+          "hitRate": 0.4123
+        },
+        "h180": {
+          "n": 104,
+          "medianExcess": -0.0202,
+          "winsorizedMeanExcess": -0.0363,
+          "hitRate": 0.3846
+        }
+      },
+      "house": {
+        "h30": {
+          "n": 364,
+          "medianExcess": -0.0264,
+          "winsorizedMeanExcess": -0.0173,
+          "hitRate": 0.3956
+        },
+        "h90": {
+          "n": 78,
+          "medianExcess": -0.1026,
+          "winsorizedMeanExcess": -0.0625,
+          "hitRate": 0.3205
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      }
+    },
+    "sells": {
+      "senate": {
+        "h30": {
+          "n": 245,
+          "medianExcess": -0.0024,
+          "winsorizedMeanExcess": 0.001,
+          "hitRate": 0.4816
+        },
+        "h90": {
+          "n": 221,
+          "medianExcess": 0.0002,
+          "winsorizedMeanExcess": 0.0168,
+          "hitRate": 0.5023
+        },
+        "h180": {
+          "n": 130,
+          "medianExcess": 0.0003,
+          "winsorizedMeanExcess": 0.0184,
+          "hitRate": 0.5385
+        }
+      },
+      "house": {
+        "h30": {
+          "n": 362,
+          "medianExcess": -0.0226,
+          "winsorizedMeanExcess": -0.0184,
+          "hitRate": 0.4227
+        },
+        "h90": {
+          "n": 119,
+          "medianExcess": -0.0759,
+          "winsorizedMeanExcess": -0.0664,
+          "hitRate": 0.3025
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      }
+    }
+  },
+  "byAmountBucket": {
+    "<$15k": {
+      "h30": {
+        "n": 465,
+        "medianExcess": -0.019,
+        "winsorizedMeanExcess": -0.0119,
+        "hitRate": 0.372
+      },
+      "h90": {
+        "n": 196,
+        "medianExcess": -0.0414,
+        "winsorizedMeanExcess": -0.0234,
+        "hitRate": 0.3622
+      },
+      "h180": {
+        "n": 84,
+        "medianExcess": -0.0072,
+        "winsorizedMeanExcess": 0.0105,
+        "hitRate": 0.4286
+      }
+    },
+    ">$250k": {
+      "h30": {
+        "n": 3,
+        "medianExcess": 0.0013,
+        "winsorizedMeanExcess": 0.0046,
+        "hitRate": 0.6667
+      },
+      "h90": {
+        "n": 2,
+        "medianExcess": -0.2959,
+        "winsorizedMeanExcess": -0.2959,
+        "hitRate": 0
+      },
+      "h180": {
+        "n": 2,
+        "medianExcess": -0.4003,
+        "winsorizedMeanExcess": -0.4003,
+        "hitRate": 0
+      }
+    },
+    "$15k-50k": {
+      "h30": {
+        "n": 101,
+        "medianExcess": -0.006,
+        "winsorizedMeanExcess": 0.005,
+        "hitRate": 0.4653
+      },
+      "h90": {
+        "n": 70,
+        "medianExcess": -0.0162,
+        "winsorizedMeanExcess": -0.0038,
+        "hitRate": 0.4286
+      },
+      "h180": {
+        "n": 11,
+        "medianExcess": -0.0803,
+        "winsorizedMeanExcess": -0.1021,
+        "hitRate": 0.2727
+      }
+    },
+    "$50k-100k": {
+      "h30": {
+        "n": 15,
+        "medianExcess": 0.019,
+        "winsorizedMeanExcess": 0.0266,
+        "hitRate": 0.7333
+      },
+      "h90": {
+        "n": 13,
+        "medianExcess": 0.0042,
+        "winsorizedMeanExcess": 0.0147,
+        "hitRate": 0.5385
+      },
+      "h180": {
+        "n": 5,
+        "medianExcess": -0.298,
+        "winsorizedMeanExcess": -0.2728,
+        "hitRate": 0.2
+      }
+    },
+    "$100k-250k": {
+      "h30": {
+        "n": 9,
+        "medianExcess": -0.0061,
+        "winsorizedMeanExcess": -0.0272,
+        "hitRate": 0.4444
+      },
+      "h90": {
+        "n": 8,
+        "medianExcess": -0.0188,
+        "winsorizedMeanExcess": -0.0278,
+        "hitRate": 0.5
+      },
+      "h180": {
+        "n": 2,
+        "medianExcess": -0.2882,
+        "winsorizedMeanExcess": -0.2882,
+        "hitRate": 0
+      }
+    }
+  },
+  "byFilingDelayBucket": {
+    "15-30d": {
+      "h30": {
+        "n": 339,
+        "medianExcess": -0.02,
+        "winsorizedMeanExcess": -0.0143,
+        "hitRate": 0.3687
+      },
+      "h90": {
+        "n": 193,
+        "medianExcess": -0.0561,
+        "winsorizedMeanExcess": -0.0396,
+        "hitRate": 0.3523
+      },
+      "h180": {
+        "n": 57,
+        "medianExcess": -0.037,
+        "winsorizedMeanExcess": -0.0305,
+        "hitRate": 0.3684
+      }
+    },
+    "<=15d": {
+      "h30": {
+        "n": 127,
+        "medianExcess": 0.0027,
+        "winsorizedMeanExcess": 0.0103,
+        "hitRate": 0.5118
+      },
+      "h90": {
+        "n": 60,
+        "medianExcess": -0.0039,
+        "winsorizedMeanExcess": 0.038,
+        "hitRate": 0.5
+      },
+      "h180": {
+        "n": 20,
+        "medianExcess": -0.0826,
+        "winsorizedMeanExcess": -0.0815,
+        "hitRate": 0.35
+      }
+    },
+    ">30d": {
+      "h30": {
+        "n": 127,
+        "medianExcess": -0.018,
+        "winsorizedMeanExcess": -0.0061,
+        "hitRate": 0.3701
+      },
+      "h90": {
+        "n": 36,
+        "medianExcess": -0.0235,
+        "winsorizedMeanExcess": 0.0105,
+        "hitRate": 0.3889
+      },
+      "h180": {
+        "n": 27,
+        "medianExcess": -0.0013,
+        "winsorizedMeanExcess": 0.0049,
+        "hitRate": 0.4444
+      }
+    }
+  },
+  "filterComparison": {
+    "note": "Approximation of live SignalFilter gates on the historical buy sample (rank/committee/wash-sale gates not reproducible historically).",
+    "allBuys": {
+      "h30": {
+        "n": 593,
+        "medianExcess": -0.0147,
+        "winsorizedMeanExcess": -0.0084,
+        "hitRate": 0.3997
+      },
+      "h90": {
+        "n": 289,
+        "medianExcess": -0.0377,
+        "winsorizedMeanExcess": -0.0194,
+        "hitRate": 0.3875
+      },
+      "h180": {
+        "n": 104,
+        "medianExcess": -0.0202,
+        "winsorizedMeanExcess": -0.0363,
+        "hitRate": 0.3846
+      }
+    },
+    "liveGates_amount15k_delay45": {
+      "h30": {
+        "n": 128,
+        "medianExcess": 0.0004,
+        "winsorizedMeanExcess": 0.0061,
+        "hitRate": 0.5
+      },
+      "h90": {
+        "n": 93,
+        "medianExcess": -0.0201,
+        "winsorizedMeanExcess": -0.0092,
+        "hitRate": 0.4409
+      },
+      "h180": {
+        "n": 20,
+        "medianExcess": -0.2347,
+        "winsorizedMeanExcess": -0.1875,
+        "hitRate": 0.2
+      }
+    },
+    "proposed_amount15k_delay15": {
+      "h30": {
+        "n": 24,
+        "medianExcess": 0.019,
+        "winsorizedMeanExcess": 0.0132,
+        "hitRate": 0.5833
+      },
+      "h90": {
+        "n": 19,
+        "medianExcess": 0.0448,
+        "winsorizedMeanExcess": 0.0698,
+        "hitRate": 0.5263
+      },
+      "h180": {
+        "n": 7,
+        "medianExcess": -0.201,
+        "winsorizedMeanExcess": -0.1773,
+        "hitRate": 0.1429
+      }
+    },
+    "proposed_amount15k_delay15_senateOnly": {
+      "h30": {
+        "n": 11,
+        "medianExcess": -0.0173,
+        "winsorizedMeanExcess": 0.0095,
+        "hitRate": 0.4545
+      },
+      "h90": {
+        "n": 11,
+        "medianExcess": -0.0483,
+        "winsorizedMeanExcess": -0.0187,
+        "hitRate": 0.3636
+      },
+      "h180": {
+        "n": 7,
+        "medianExcess": -0.201,
+        "winsorizedMeanExcess": -0.1773,
+        "hitRate": 0.1429
+      }
+    },
+    "delay15_anyAmount": {
+      "h30": {
+        "n": 127,
+        "medianExcess": 0.0027,
+        "winsorizedMeanExcess": 0.0103,
+        "hitRate": 0.5118
+      },
+      "h90": {
+        "n": 60,
+        "medianExcess": -0.0039,
+        "winsorizedMeanExcess": 0.038,
+        "hitRate": 0.5
+      },
+      "h180": {
+        "n": 20,
+        "medianExcess": -0.0826,
+        "winsorizedMeanExcess": -0.0815,
+        "hitRate": 0.35
+      }
+    }
+  },
+  "bySector": "not available — trades table has no sector column and raw_data carries no sector field",
+  "perPolitician": {
+    "minN": 8,
+    "all": [
+      {
+        "politicianId": 33,
+        "name": "Tim Moore",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 12,
+        "medianFilingDelayDays": 8,
+        "h30": {
+          "n": 11,
+          "medianExcess": 0.0682,
+          "winsorizedMeanExcess": 0.0258,
+          "hitRate": 0.6364
+        },
+        "h90": {
+          "n": 9,
+          "medianExcess": 0.3029,
+          "winsorizedMeanExcess": 0.1484,
+          "hitRate": 0.7778
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 25,
+        "name": "John Fetterman",
+        "chamber": "senate",
+        "party": "D",
+        "nBuys": 8,
+        "medianFilingDelayDays": 4,
+        "h30": {
+          "n": 8,
+          "medianExcess": -0.0034,
+          "winsorizedMeanExcess": 0.0375,
+          "hitRate": 0.375
+        },
+        "h90": {
+          "n": 1,
+          "medianExcess": 0.2231,
+          "winsorizedMeanExcess": 0.2231,
+          "hitRate": 1
+        },
+        "h180": {
+          "n": 1,
+          "medianExcess": 0.6099,
+          "winsorizedMeanExcess": 0.6099,
+          "hitRate": 1
+        }
+      },
+      {
+        "politicianId": 17,
+        "name": "Sheldon Whitehouse",
+        "chamber": "senate",
+        "party": "D",
+        "nBuys": 3,
+        "medianFilingDelayDays": 10,
+        "h30": {
+          "n": 3,
+          "medianExcess": -0.0256,
+          "winsorizedMeanExcess": -0.021,
+          "hitRate": 0
+        },
+        "h90": {
+          "n": 3,
+          "medianExcess": 0.1245,
+          "winsorizedMeanExcess": 0.0993,
+          "hitRate": 0.6667
+        },
+        "h180": {
+          "n": 3,
+          "medianExcess": 0.0009,
+          "winsorizedMeanExcess": 0.0122,
+          "hitRate": 0.6667
+        }
+      },
+      {
+        "politicianId": 16,
+        "name": "Shelley Moore Capito",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 11,
+        "medianFilingDelayDays": 23,
+        "h30": {
+          "n": 11,
+          "medianExcess": -0.0269,
+          "winsorizedMeanExcess": -0.0149,
+          "hitRate": 0.3636
+        },
+        "h90": {
+          "n": 8,
+          "medianExcess": 0.0822,
+          "winsorizedMeanExcess": 0.0789,
+          "hitRate": 0.625
+        },
+        "h180": {
+          "n": 7,
+          "medianExcess": -0.0175,
+          "winsorizedMeanExcess": 0.0496,
+          "hitRate": 0.4286
+        }
+      },
+      {
+        "politicianId": 49,
+        "name": "Gary Peters",
+        "chamber": "senate",
+        "party": "D",
+        "nBuys": 5,
+        "medianFilingDelayDays": 20,
+        "h30": {
+          "n": 4,
+          "medianExcess": 0.064,
+          "winsorizedMeanExcess": 0.0723,
+          "hitRate": 0.75
+        },
+        "h90": {
+          "n": 4,
+          "medianExcess": 0.0801,
+          "winsorizedMeanExcess": 0.0705,
+          "hitRate": 0.75
+        },
+        "h180": {
+          "n": 1,
+          "medianExcess": -0.3361,
+          "winsorizedMeanExcess": -0.3361,
+          "hitRate": 0
+        }
+      },
+      {
+        "politicianId": 20,
+        "name": "Jonathan Jackson",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 7,
+        "medianFilingDelayDays": 23,
+        "h30": {
+          "n": 7,
+          "medianExcess": 0.0738,
+          "winsorizedMeanExcess": 0.0188,
+          "hitRate": 0.5714
+        },
+        "h90": {
+          "n": 2,
+          "medianExcess": 0.0477,
+          "winsorizedMeanExcess": 0.0477,
+          "hitRate": 0.5
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 36,
+        "name": "Ed Case",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 2,
+        "medianFilingDelayDays": 30,
+        "h30": {
+          "n": 1,
+          "medianExcess": 0.0044,
+          "winsorizedMeanExcess": 0.0044,
+          "hitRate": 1
+        },
+        "h90": {
+          "n": 1,
+          "medianExcess": 0.0426,
+          "winsorizedMeanExcess": 0.0426,
+          "hitRate": 1
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 39,
+        "name": "Richard W. Allen",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 4,
+        "medianFilingDelayDays": 39,
+        "h30": {
+          "n": 2,
+          "medianExcess": -0.0024,
+          "winsorizedMeanExcess": -0.0024,
+          "hitRate": 0.5
+        },
+        "h90": {
+          "n": 2,
+          "medianExcess": -0.003,
+          "winsorizedMeanExcess": -0.003,
+          "hitRate": 0.5
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 53,
+        "name": "Jerry Moran",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 1,
+        "medianFilingDelayDays": 34,
+        "h30": {
+          "n": 1,
+          "medianExcess": 0.0727,
+          "winsorizedMeanExcess": 0.0727,
+          "hitRate": 1
+        },
+        "h90": {
+          "n": 1,
+          "medianExcess": -0.0066,
+          "winsorizedMeanExcess": -0.0066,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 1,
+          "medianExcess": -0.0649,
+          "winsorizedMeanExcess": -0.0649,
+          "hitRate": 0
+        }
+      },
+      {
+        "politicianId": 40,
+        "name": "Markwayne Mullin",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 59,
+        "medianFilingDelayDays": 18,
+        "h30": {
+          "n": 59,
+          "medianExcess": -0.0053,
+          "winsorizedMeanExcess": 0.0003,
+          "hitRate": 0.4746
+        },
+        "h90": {
+          "n": 59,
+          "medianExcess": -0.0122,
+          "winsorizedMeanExcess": -0.0158,
+          "hitRate": 0.4407
+        },
+        "h180": {
+          "n": 7,
+          "medianExcess": -0.298,
+          "winsorizedMeanExcess": -0.2695,
+          "hitRate": 0.1429
+        }
+      },
+      {
+        "politicianId": 28,
+        "name": "David J. Taylor",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 29,
+        "medianFilingDelayDays": 8,
+        "h30": {
+          "n": 24,
+          "medianExcess": 0.0256,
+          "winsorizedMeanExcess": 0.0223,
+          "hitRate": 0.6667
+        },
+        "h90": {
+          "n": 15,
+          "medianExcess": -0.0167,
+          "winsorizedMeanExcess": -0.0213,
+          "hitRate": 0.4
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 50,
+        "name": "Tommy Tuberville",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 3,
+        "medianFilingDelayDays": 29,
+        "h30": {
+          "n": 3,
+          "medianExcess": 0.0819,
+          "winsorizedMeanExcess": 0.0657,
+          "hitRate": 1
+        },
+        "h90": {
+          "n": 3,
+          "medianExcess": -0.0204,
+          "winsorizedMeanExcess": -0.0122,
+          "hitRate": 0.3333
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 13,
+        "name": "John Boozman",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 114,
+        "medianFilingDelayDays": 25,
+        "h30": {
+          "n": 99,
+          "medianExcess": -0.0066,
+          "winsorizedMeanExcess": 0.0031,
+          "hitRate": 0.303
+        },
+        "h90": {
+          "n": 91,
+          "medianExcess": -0.0241,
+          "winsorizedMeanExcess": -0.0023,
+          "hitRate": 0.3956
+        },
+        "h180": {
+          "n": 51,
+          "medianExcess": -0.0042,
+          "winsorizedMeanExcess": 0.0099,
+          "hitRate": 0.4118
+        }
+      },
+      {
+        "politicianId": 51,
+        "name": "Lindsey Graham",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 3,
+        "medianFilingDelayDays": 14,
+        "h30": {
+          "n": 3,
+          "medianExcess": -0.0173,
+          "winsorizedMeanExcess": -0.0158,
+          "hitRate": 0.3333
+        },
+        "h90": {
+          "n": 3,
+          "medianExcess": -0.0335,
+          "winsorizedMeanExcess": -0.0149,
+          "hitRate": 0.3333
+        },
+        "h180": {
+          "n": 2,
+          "medianExcess": -0.0905,
+          "winsorizedMeanExcess": -0.0905,
+          "hitRate": 0
+        }
+      },
+      {
+        "politicianId": 32,
+        "name": "Angus King",
+        "chamber": "senate",
+        "party": "I",
+        "nBuys": 23,
+        "medianFilingDelayDays": 28,
+        "h30": {
+          "n": 23,
+          "medianExcess": 0.0027,
+          "winsorizedMeanExcess": 0.0173,
+          "hitRate": 0.5217
+        },
+        "h90": {
+          "n": 23,
+          "medianExcess": -0.0345,
+          "winsorizedMeanExcess": 0.0098,
+          "hitRate": 0.4348
+        },
+        "h180": {
+          "n": 21,
+          "medianExcess": 0.0015,
+          "winsorizedMeanExcess": 0.0371,
+          "hitRate": 0.5238
+        }
+      },
+      {
+        "politicianId": 48,
+        "name": "Katie Britt",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 2,
+        "medianFilingDelayDays": 80,
+        "h30": {
+          "n": 2,
+          "medianExcess": 0.0479,
+          "winsorizedMeanExcess": 0.0479,
+          "hitRate": 0.5
+        },
+        "h90": {
+          "n": 2,
+          "medianExcess": -0.0426,
+          "winsorizedMeanExcess": -0.0426,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 6,
+        "name": "Cleo Fields",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 5,
+        "medianFilingDelayDays": 12,
+        "h30": {
+          "n": 4,
+          "medianExcess": 0.027,
+          "winsorizedMeanExcess": 0.0494,
+          "hitRate": 0.75
+        },
+        "h90": {
+          "n": 2,
+          "medianExcess": -0.0451,
+          "winsorizedMeanExcess": -0.0451,
+          "hitRate": 0.5
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 34,
+        "name": "A. Mitchell McConnell",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 4,
+        "medianFilingDelayDays": 18,
+        "h30": {
+          "n": 4,
+          "medianExcess": -0.0154,
+          "winsorizedMeanExcess": -0.0161,
+          "hitRate": 0.5
+        },
+        "h90": {
+          "n": 4,
+          "medianExcess": -0.0454,
+          "winsorizedMeanExcess": -0.0285,
+          "hitRate": 0.25
+        },
+        "h180": {
+          "n": 3,
+          "medianExcess": -0.0779,
+          "winsorizedMeanExcess": -0.0567,
+          "hitRate": 0.3333
+        }
+      },
+      {
+        "politicianId": 43,
+        "name": "John Hickenlooper",
+        "chamber": "senate",
+        "party": "D",
+        "nBuys": 5,
+        "medianFilingDelayDays": 25,
+        "h30": {
+          "n": 5,
+          "medianExcess": 0.0008,
+          "winsorizedMeanExcess": 0.0008,
+          "hitRate": 0.6
+        },
+        "h90": {
+          "n": 5,
+          "medianExcess": -0.0659,
+          "winsorizedMeanExcess": -0.1158,
+          "hitRate": 0.2
+        },
+        "h180": {
+          "n": 3,
+          "medianExcess": -0.3536,
+          "winsorizedMeanExcess": -0.3745,
+          "hitRate": 0
+        }
+      },
+      {
+        "politicianId": 15,
+        "name": "Thomas H. Kean",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 6,
+        "medianFilingDelayDays": 28,
+        "h30": {
+          "n": 4,
+          "medianExcess": -0.0565,
+          "winsorizedMeanExcess": -0.0656,
+          "hitRate": 0
+        },
+        "h90": {
+          "n": 1,
+          "medianExcess": -0.0692,
+          "winsorizedMeanExcess": -0.0692,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 18,
+        "name": "Josh Gottheimer",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 25,
+        "medianFilingDelayDays": 27,
+        "h30": {
+          "n": 15,
+          "medianExcess": 0.019,
+          "winsorizedMeanExcess": 0.0319,
+          "hitRate": 0.6
+        },
+        "h90": {
+          "n": 1,
+          "medianExcess": -0.0921,
+          "winsorizedMeanExcess": -0.0921,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 23,
+        "name": "April Mcclain Delaney",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 64,
+        "medianFilingDelayDays": 21,
+        "h30": {
+          "n": 42,
+          "medianExcess": -0.0403,
+          "winsorizedMeanExcess": -0.0625,
+          "hitRate": 0.1429
+        },
+        "h90": {
+          "n": 9,
+          "medianExcess": -0.098,
+          "winsorizedMeanExcess": -0.1478,
+          "hitRate": 0.2222
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 21,
+        "name": "Gilbert Cisneros",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 217,
+        "medianFilingDelayDays": 25,
+        "h30": {
+          "n": 165,
+          "medianExcess": -0.0277,
+          "winsorizedMeanExcess": -0.0268,
+          "hitRate": 0.3818
+        },
+        "h90": {
+          "n": 27,
+          "medianExcess": -0.147,
+          "winsorizedMeanExcess": -0.0515,
+          "hitRate": 0.2222
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 44,
+        "name": "Virginia Foxx",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 2,
+        "medianFilingDelayDays": 18,
+        "h30": {
+          "n": 1,
+          "medianExcess": 0.0699,
+          "winsorizedMeanExcess": 0.0699,
+          "hitRate": 1
+        },
+        "h90": {
+          "n": 1,
+          "medianExcess": -0.1639,
+          "winsorizedMeanExcess": -0.1639,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 37,
+        "name": "Julia Letlow",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 5,
+        "medianFilingDelayDays": 28,
+        "h30": {
+          "n": 5,
+          "medianExcess": -0.0393,
+          "winsorizedMeanExcess": -0.0346,
+          "hitRate": 0
+        },
+        "h90": {
+          "n": 5,
+          "medianExcess": -0.1899,
+          "winsorizedMeanExcess": -0.165,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 24,
+        "name": "Lloyd Doggett",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 7,
+        "medianFilingDelayDays": 25,
+        "h30": {
+          "n": 6,
+          "medianExcess": -0.0756,
+          "winsorizedMeanExcess": -0.0908,
+          "hitRate": 0.1667
+        },
+        "h90": {
+          "n": 1,
+          "medianExcess": -0.2056,
+          "winsorizedMeanExcess": -0.2056,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 46,
+        "name": "David H. McCormick",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 4,
+        "medianFilingDelayDays": 28,
+        "h30": {
+          "n": 4,
+          "medianExcess": -0.019,
+          "winsorizedMeanExcess": -0.019,
+          "hitRate": 0.5
+        },
+        "h90": {
+          "n": 4,
+          "medianExcess": -0.2132,
+          "winsorizedMeanExcess": -0.2132,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 4,
+          "medianExcess": -0.3347,
+          "winsorizedMeanExcess": -0.3347,
+          "hitRate": 0
+        }
+      },
+      {
+        "politicianId": 19,
+        "name": "Byron Donalds",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 6,
+        "medianFilingDelayDays": 26,
+        "h30": {
+          "n": 6,
+          "medianExcess": -0.1534,
+          "winsorizedMeanExcess": -0.0305,
+          "hitRate": 0.3333
+        },
+        "h90": {
+          "n": 2,
+          "medianExcess": -0.2848,
+          "winsorizedMeanExcess": -0.2848,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 22,
+        "name": "Richard Dean Dr Mccormick",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 6,
+        "medianFilingDelayDays": 19,
+        "h30": {
+          "n": 6,
+          "medianExcess": -0.0195,
+          "winsorizedMeanExcess": -0.0486,
+          "hitRate": 0.3333
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 14,
+        "name": "Greg Steube",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 1,
+        "medianFilingDelayDays": 27,
+        "h30": {
+          "n": 1,
+          "medianExcess": 0.1442,
+          "winsorizedMeanExcess": 0.1442,
+          "hitRate": 1
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 11,
+        "name": "Rick Larsen",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 4,
+        "medianFilingDelayDays": 8,
+        "h30": {
+          "n": 4,
+          "medianExcess": -0.0009,
+          "winsorizedMeanExcess": 0.0052,
+          "hitRate": 0.5
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 12,
+        "name": "August Lee Pfluger",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 5,
+        "medianFilingDelayDays": 33,
+        "h30": {
+          "n": 5,
+          "medianExcess": 0.0034,
+          "winsorizedMeanExcess": -0.0039,
+          "hitRate": 0.6
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 10,
+        "name": "Sheri Biggs",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 1,
+        "medianFilingDelayDays": 43,
+        "h30": {
+          "n": 1,
+          "medianExcess": -0.0491,
+          "winsorizedMeanExcess": -0.0491,
+          "hitRate": 0
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 2,
+        "name": "Maria Elvira Salazar",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 39,
+        "medianFilingDelayDays": 28,
+        "h30": {
+          "n": 30,
+          "medianExcess": -0.0066,
+          "winsorizedMeanExcess": 0.0344,
+          "hitRate": 0.4667
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 1,
+        "name": "Robert E. Latta",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 2,
+        "medianFilingDelayDays": 4,
+        "h30": {
+          "n": 1,
+          "medianExcess": -0.0042,
+          "winsorizedMeanExcess": -0.0042,
+          "hitRate": 0
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 62,
+        "name": "Debbie Dingell",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 1,
+        "medianFilingDelayDays": 7,
+        "h30": {
+          "n": 1,
+          "medianExcess": -0.043,
+          "winsorizedMeanExcess": -0.043,
+          "hitRate": 0
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 30,
+        "name": "Jared Moskowitz",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 19,
+        "medianFilingDelayDays": 30,
+        "h30": {
+          "n": 19,
+          "medianExcess": -0.072,
+          "winsorizedMeanExcess": 0.0279,
+          "hitRate": 0.4211
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 67,
+        "name": "John Mcguire",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 4,
+        "medianFilingDelayDays": 28,
+        "h30": {
+          "n": 3,
+          "medianExcess": -0.0297,
+          "winsorizedMeanExcess": -0.0483,
+          "hitRate": 0
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      }
+    ],
+    "shown": [
+      {
+        "politicianId": 33,
+        "name": "Tim Moore",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 12,
+        "medianFilingDelayDays": 8,
+        "h30": {
+          "n": 11,
+          "medianExcess": 0.0682,
+          "winsorizedMeanExcess": 0.0258,
+          "hitRate": 0.6364
+        },
+        "h90": {
+          "n": 9,
+          "medianExcess": 0.3029,
+          "winsorizedMeanExcess": 0.1484,
+          "hitRate": 0.7778
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 25,
+        "name": "John Fetterman",
+        "chamber": "senate",
+        "party": "D",
+        "nBuys": 8,
+        "medianFilingDelayDays": 4,
+        "h30": {
+          "n": 8,
+          "medianExcess": -0.0034,
+          "winsorizedMeanExcess": 0.0375,
+          "hitRate": 0.375
+        },
+        "h90": {
+          "n": 1,
+          "medianExcess": 0.2231,
+          "winsorizedMeanExcess": 0.2231,
+          "hitRate": 1
+        },
+        "h180": {
+          "n": 1,
+          "medianExcess": 0.6099,
+          "winsorizedMeanExcess": 0.6099,
+          "hitRate": 1
+        }
+      },
+      {
+        "politicianId": 16,
+        "name": "Shelley Moore Capito",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 11,
+        "medianFilingDelayDays": 23,
+        "h30": {
+          "n": 11,
+          "medianExcess": -0.0269,
+          "winsorizedMeanExcess": -0.0149,
+          "hitRate": 0.3636
+        },
+        "h90": {
+          "n": 8,
+          "medianExcess": 0.0822,
+          "winsorizedMeanExcess": 0.0789,
+          "hitRate": 0.625
+        },
+        "h180": {
+          "n": 7,
+          "medianExcess": -0.0175,
+          "winsorizedMeanExcess": 0.0496,
+          "hitRate": 0.4286
+        }
+      },
+      {
+        "politicianId": 40,
+        "name": "Markwayne Mullin",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 59,
+        "medianFilingDelayDays": 18,
+        "h30": {
+          "n": 59,
+          "medianExcess": -0.0053,
+          "winsorizedMeanExcess": 0.0003,
+          "hitRate": 0.4746
+        },
+        "h90": {
+          "n": 59,
+          "medianExcess": -0.0122,
+          "winsorizedMeanExcess": -0.0158,
+          "hitRate": 0.4407
+        },
+        "h180": {
+          "n": 7,
+          "medianExcess": -0.298,
+          "winsorizedMeanExcess": -0.2695,
+          "hitRate": 0.1429
+        }
+      },
+      {
+        "politicianId": 28,
+        "name": "David J. Taylor",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 29,
+        "medianFilingDelayDays": 8,
+        "h30": {
+          "n": 24,
+          "medianExcess": 0.0256,
+          "winsorizedMeanExcess": 0.0223,
+          "hitRate": 0.6667
+        },
+        "h90": {
+          "n": 15,
+          "medianExcess": -0.0167,
+          "winsorizedMeanExcess": -0.0213,
+          "hitRate": 0.4
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 13,
+        "name": "John Boozman",
+        "chamber": "senate",
+        "party": "R",
+        "nBuys": 114,
+        "medianFilingDelayDays": 25,
+        "h30": {
+          "n": 99,
+          "medianExcess": -0.0066,
+          "winsorizedMeanExcess": 0.0031,
+          "hitRate": 0.303
+        },
+        "h90": {
+          "n": 91,
+          "medianExcess": -0.0241,
+          "winsorizedMeanExcess": -0.0023,
+          "hitRate": 0.3956
+        },
+        "h180": {
+          "n": 51,
+          "medianExcess": -0.0042,
+          "winsorizedMeanExcess": 0.0099,
+          "hitRate": 0.4118
+        }
+      },
+      {
+        "politicianId": 32,
+        "name": "Angus King",
+        "chamber": "senate",
+        "party": "I",
+        "nBuys": 23,
+        "medianFilingDelayDays": 28,
+        "h30": {
+          "n": 23,
+          "medianExcess": 0.0027,
+          "winsorizedMeanExcess": 0.0173,
+          "hitRate": 0.5217
+        },
+        "h90": {
+          "n": 23,
+          "medianExcess": -0.0345,
+          "winsorizedMeanExcess": 0.0098,
+          "hitRate": 0.4348
+        },
+        "h180": {
+          "n": 21,
+          "medianExcess": 0.0015,
+          "winsorizedMeanExcess": 0.0371,
+          "hitRate": 0.5238
+        }
+      },
+      {
+        "politicianId": 18,
+        "name": "Josh Gottheimer",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 25,
+        "medianFilingDelayDays": 27,
+        "h30": {
+          "n": 15,
+          "medianExcess": 0.019,
+          "winsorizedMeanExcess": 0.0319,
+          "hitRate": 0.6
+        },
+        "h90": {
+          "n": 1,
+          "medianExcess": -0.0921,
+          "winsorizedMeanExcess": -0.0921,
+          "hitRate": 0
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 23,
+        "name": "April Mcclain Delaney",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 64,
+        "medianFilingDelayDays": 21,
+        "h30": {
+          "n": 42,
+          "medianExcess": -0.0403,
+          "winsorizedMeanExcess": -0.0625,
+          "hitRate": 0.1429
+        },
+        "h90": {
+          "n": 9,
+          "medianExcess": -0.098,
+          "winsorizedMeanExcess": -0.1478,
+          "hitRate": 0.2222
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 21,
+        "name": "Gilbert Cisneros",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 217,
+        "medianFilingDelayDays": 25,
+        "h30": {
+          "n": 165,
+          "medianExcess": -0.0277,
+          "winsorizedMeanExcess": -0.0268,
+          "hitRate": 0.3818
+        },
+        "h90": {
+          "n": 27,
+          "medianExcess": -0.147,
+          "winsorizedMeanExcess": -0.0515,
+          "hitRate": 0.2222
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 2,
+        "name": "Maria Elvira Salazar",
+        "chamber": "house",
+        "party": "R",
+        "nBuys": 39,
+        "medianFilingDelayDays": 28,
+        "h30": {
+          "n": 30,
+          "medianExcess": -0.0066,
+          "winsorizedMeanExcess": 0.0344,
+          "hitRate": 0.4667
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      {
+        "politicianId": 30,
+        "name": "Jared Moskowitz",
+        "chamber": "house",
+        "party": "D",
+        "nBuys": 19,
+        "medianFilingDelayDays": 30,
+        "h30": {
+          "n": 19,
+          "medianExcess": -0.072,
+          "winsorizedMeanExcess": 0.0279,
+          "hitRate": 0.4211
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      }
+    ]
+  },
+  "rankingValidation": {
+    "liveRankingTest": {
+      "note": "Rankings history starts 2026-04-25T21:34:56.904Z; only buys FILED after that date qualify, and only the +30d horizon has complete windows. Thin — treat as directional only.",
+      "firstRunDate": "2026-04-25T21:34:56.904Z",
+      "nPostRankingBuys": 244,
+      "rankedTop15": {
+        "h30": {
+          "n": 92,
+          "medianExcess": 0.0109,
+          "winsorizedMeanExcess": 0.0238,
+          "hitRate": 0.5326
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      "notRanked": {
+        "h30": {
+          "n": 27,
+          "medianExcess": -0.0297,
+          "winsorizedMeanExcess": 0.04,
+          "hitRate": 0.4074
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      }
+    },
+    "splitSampleTest": {
+      "note": "Politicians ranked on first-half median +90d excess (min 5 obs); performance measured on second-half buys.",
+      "splitDate": "2026-04-07",
+      "nEligiblePoliticians": 10,
+      "topHalf": {
+        "politicians": 5,
+        "h30": {
+          "n": 19,
+          "medianExcess": -0.0111,
+          "winsorizedMeanExcess": 0.0029,
+          "hitRate": 0.4737
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      "bottomHalf": {
+        "politicians": 5,
+        "h30": {
+          "n": 148,
+          "medianExcess": -0.0317,
+          "winsorizedMeanExcess": -0.0302,
+          "hitRate": 0.3514
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      },
+      "notEligible": {
+        "h30": {
+          "n": 98,
+          "medianExcess": -0.0082,
+          "winsorizedMeanExcess": 0.0124,
+          "hitRate": 0.4592
+        },
+        "h90": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        },
+        "h180": {
+          "n": 0,
+          "medianExcess": null,
+          "winsorizedMeanExcess": null,
+          "hitRate": null
+        }
+      }
+    }
+  },
+  "thirteenF": {
+    "snapshots": [
+      "2025-12-31 (filed 2026-02-17)",
+      "2026-03-31 (filed 2026-05-15)"
+    ],
+    "excluded": "Greenlight Capital (single stale 2023-12-31 snapshot); index ETFs",
+    "unmappedTopPositions": {
+      "q4": [],
+      "q1": []
+    },
+    "policy": "top-5 non-ETF positions per fund by weight, conviction-weighted (weight ∝ number of funds), rebalance first trading day after each 13F filing",
+    "q4Portfolio": {
+      "BN": 0.04,
+      "UBER": 0.04,
+      "AMZN": 0.12,
+      "GOOGL": 0.08,
+      "META": 0.08,
+      "NTRA": 0.04,
+      "INSM": 0.04,
+      "TEVA": 0.04,
+      "WWD": 0.04,
+      "TSM": 0.04,
+      "BABA": 0.04,
+      "MU": 0.04,
+      "OXY": 0.04,
+      "CB": 0.04,
+      "KHC": 0.04,
+      "MCO": 0.04,
+      "GOOG": 0.04,
+      "QSR": 0.04,
+      "WTW": 0.04,
+      "ELV": 0.04,
+      "UNP": 0.04
+    },
+    "q1Portfolio": {
+      "AMZN": 0.12,
+      "QSR": 0.08,
+      "WCC": 0.04,
+      "UNP": 0.04,
+      "ELV": 0.04,
+      "OXY": 0.04,
+      "CVX": 0.04,
+      "GOOG": 0.04,
+      "CB": 0.04,
+      "KHC": 0.04,
+      "BN": 0.04,
+      "UBER": 0.08,
+      "MSFT": 0.04,
+      "NTRA": 0.04,
+      "INSM": 0.04,
+      "TSM": 0.08,
+      "YPF": 0.04,
+      "TBBB": 0.04,
+      "MU": 0.04,
+      "GOOGL": 0.04
+    },
+    "leg1": {
+      "window": "2026-02-18..2026-05-15",
+      "sleeve": 0.0862,
+      "spy": 0.0801,
+      "coveredWeight": 1,
+      "legs": [
+        {
+          "ticker": "BN",
+          "weight": 0.04,
+          "ret": -0.0385
+        },
+        {
+          "ticker": "UBER",
+          "weight": 0.04,
+          "ret": 0.0321
+        },
+        {
+          "ticker": "AMZN",
+          "weight": 0.12,
+          "ret": 0.2909
+        },
+        {
+          "ticker": "GOOGL",
+          "weight": 0.08,
+          "ret": 0.3094
+        },
+        {
+          "ticker": "META",
+          "weight": 0.08,
+          "ret": -0.0437
+        },
+        {
+          "ticker": "NTRA",
+          "weight": 0.04,
+          "ret": -0.1357
+        },
+        {
+          "ticker": "INSM",
+          "weight": 0.04,
+          "ret": -0.2783
+        },
+        {
+          "ticker": "TEVA",
+          "weight": 0.04,
+          "ret": 0.005
+        },
+        {
+          "ticker": "WWD",
+          "weight": 0.04,
+          "ret": -0.1095
+        },
+        {
+          "ticker": "TSM",
+          "weight": 0.04,
+          "ret": 0.1189
+        },
+        {
+          "ticker": "BABA",
+          "weight": 0.04,
+          "ret": -0.149
+        },
+        {
+          "ticker": "MU",
+          "weight": 0.04,
+          "ret": 0.7211
+        },
+        {
+          "ticker": "OXY",
+          "weight": 0.04,
+          "ret": 0.269
+        },
+        {
+          "ticker": "CB",
+          "weight": 0.04,
+          "ret": -0.0121
+        },
+        {
+          "ticker": "KHC",
+          "weight": 0.04,
+          "ret": -0.0264
+        },
+        {
+          "ticker": "MCO",
+          "weight": 0.04,
+          "ret": -0.043
+        },
+        {
+          "ticker": "GOOG",
+          "weight": 0.04,
+          "ret": 0.2948
+        },
+        {
+          "ticker": "QSR",
+          "weight": 0.04,
+          "ret": 0.11
+        },
+        {
+          "ticker": "WTW",
+          "weight": 0.04,
+          "ret": -0.1749
+        },
+        {
+          "ticker": "ELV",
+          "weight": 0.04,
+          "ret": 0.1408
+        },
+        {
+          "ticker": "UNP",
+          "weight": 0.04,
+          "ret": 0.0261
+        }
+      ]
+    },
+    "leg2": {
+      "window": "2026-05-18..2026-06-30",
+      "sleeve": 0.019,
+      "spy": 0.0138,
+      "coveredWeight": 1,
+      "legs": [
+        {
+          "ticker": "AMZN",
+          "weight": 0.12,
+          "ret": -0.1003
+        },
+        {
+          "ticker": "QSR",
+          "weight": 0.08,
+          "ret": -0.0354
+        },
+        {
+          "ticker": "WCC",
+          "weight": 0.04,
+          "ret": -0.005
+        },
+        {
+          "ticker": "UNP",
+          "weight": 0.04,
+          "ret": -0.007
+        },
+        {
+          "ticker": "ELV",
+          "weight": 0.04,
+          "ret": -0.0147
+        },
+        {
+          "ticker": "OXY",
+          "weight": 0.04,
+          "ret": -0.1829
+        },
+        {
+          "ticker": "CVX",
+          "weight": 0.04,
+          "ret": -0.1472
+        },
+        {
+          "ticker": "GOOG",
+          "weight": 0.04,
+          "ret": -0.1009
+        },
+        {
+          "ticker": "CB",
+          "weight": 0.04,
+          "ret": 0.0345
+        },
+        {
+          "ticker": "KHC",
+          "weight": 0.04,
+          "ret": 0.0288
+        },
+        {
+          "ticker": "BN",
+          "weight": 0.04,
+          "ret": -0.0539
+        },
+        {
+          "ticker": "UBER",
+          "weight": 0.08,
+          "ret": -0.0394
+        },
+        {
+          "ticker": "MSFT",
+          "weight": 0.04,
+          "ret": -0.1177
+        },
+        {
+          "ticker": "NTRA",
+          "weight": 0.04,
+          "ret": 0.4101
+        },
+        {
+          "ticker": "INSM",
+          "weight": 0.04,
+          "ret": -0.0039
+        },
+        {
+          "ticker": "TSM",
+          "weight": 0.08,
+          "ret": 0.2073
+        },
+        {
+          "ticker": "YPF",
+          "weight": 0.04,
+          "ret": -0.0424
+        },
+        {
+          "ticker": "TBBB",
+          "weight": 0.04,
+          "ret": 0.1232
+        },
+        {
+          "ticker": "MU",
+          "weight": 0.04,
+          "ret": 0.6902
+        },
+        {
+          "ticker": "GOOGL",
+          "weight": 0.04,
+          "ret": -0.0992
+        }
+      ]
+    },
+    "cumulative": {
+      "sleeve": 0.1069,
+      "spy": 0.095,
+      "excess": 0.0119
+    },
+    "turnoverAtRebalance": 0.32
+  }
+}
